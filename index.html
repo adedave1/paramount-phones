@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Paramount Phones & Gadgets</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: white;
+      color: black;
+    }
+
+    header {
+      background: black;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    nav {
+      background: #222;
+      padding: 10px;
+      text-align: center;
+    }
+
+    nav a {
+      color: white;
+      margin: 10px;
+      text-decoration: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .hero {
+      padding: 40px;
+      text-align: center;
+      background: #f5f5f5;
+    }
+
+    .products {
+      padding: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      border: 1px solid black;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .card img {
+      width: 100%;
+      height: 200px;
+      object-fit: contain;
+    }
+
+    button {
+      background: black;
+      color: white;
+      border: none;
+      padding: 10px;
+      margin-top: 5px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    footer {
+      background: black;
+      color: white;
+      text-align: center;
+      padding: 15px;
+      margin-top: 20px;
+    }
+
+    #cart, #admin {
+      padding: 20px;
+      display: none;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Paramount Phones & Gadgets</h1>
+  <p>Your Number 1 Gadget Plug</p>
+</header>
+
+<nav>
+  <a onclick="showSection('shop')">Shop</a>
+  <a onclick="showSection('cart')">Cart 🛒</a>
+  <a onclick="showSection('admin')">Admin</a>
+</nav>
+
+<div class="hero">
+  <h2>Latest Phones at Hot Prices 🔥</h2>
+  <p>Order Directly via WhatsApp</p>
+</div>
+
+<!-- SHOP -->
+<div class="products" id="shop"></div>
+
+<!-- CART -->
+<div id="cart">
+  <h2>Your Cart</h2>
+  <div id="cartItems"></div>
+</div>
+
+<!-- ADMIN -->
+<div id="admin">
+  <h2>Add New Phone</h2>
+
+  <input type="text" id="pname" placeholder="Phone Name">
+  <input type="text" id="pprice" placeholder="Price (₦)">
+  <input type="text" id="pimage" placeholder="Image URL">
+
+  <button onclick="addProduct()">Add Phone</button>
+</div>
+
+<footer>
+  <p>Call / WhatsApp: 080-XXX-XXXX</p>
+  <p>© 2025 Paramount Phones & Gadgets</p>
+</footer>
+
+<script>
+  let products = JSON.parse(localStorage.getItem("products")) || [
+    {name:"iPhone 13", price:"₦550,000", image:"https://via.placeholder.com/200"},
+    {name:"Samsung A14", price:"₦150,000", image:"https://via.placeholder.com/200"},
+    {name:"Tecno Spark 20", price:"₦135,000", image:"https://via.placeholder.com/200"},
+    {name:"Infinix Note 30", price:"₦180,000", image:"https://via.placeholder.com/200"}
+  ];
+
+  let cart = [];
+
+  function displayProducts() {
+    let shop = document.getElementById("shop");
+    shop.innerHTML = "";
+
+    products.forEach((p) => {
+      shop.innerHTML += `
+        <div class="card">
+          <img src="${p.image}">
+          <h3>${p.name}</h3>
+          <p>${p.price}</p>
+          <button onclick="addToCart('${p.name}', '${p.price}')">Add To Cart</button>
+          <button onclick="buyNow('${p.name}')">Buy on WhatsApp</button>
+        </div>
+      `;
+    });
+  }
+
+  function addToCart(name, price) {
+    cart.push({name, price});
+    alert("Added to cart ✅");
+    showCart();
+  }
+
+  function showCart() {
+    showSection("cart");
+    let cartBox = document.getElementById("cartItems");
+    cartBox.innerHTML = "";
+
+    cart.forEach((item) => {
+      cartBox.innerHTML += `<p>${item.name} - ${item.price}</p>`;
+    });
+  }
+
+  function buyNow(name) {
+    let number = "23480XXXXXXXX"; 
+    let msg = `Hello, I want to buy ${name}`;
+    window.open(`https://wa.me/${number}?text=${msg}`);
+  }
+
+  function addProduct() {
+    let name = document.getElementById("pname").value;
+    let price = document.getElementById("pprice").value;
+    let image = document.getElementById("pimage").value;
+
+    products.push({name, price, image});
+    localStorage.setItem("products", JSON.stringify(products));
+    alert("Product Added ✅");
+    displayProducts();
+  }
+
+  function showSection(section) {
+    document.getElementById("shop").style.display = "none";
+    document.getElementById("cart").style.display = "none";
+    document.getElementById("admin").style.display = "none";
+
+    document.getElementById(section).style.display = "block";
+  }
+
+  displayProducts();
+</script>
+
+</body>
+</html>
