@@ -3,18 +3,22 @@
 <head>
   <title>Paramount Phones & Gadgets</title>
   <style>
-    body {margin: 0; font-family: Arial, sans-serif; background: white; color: black;}
-    header {background: black; color: white; padding: 20px; text-align: center;}
-    nav {background: #222; padding: 10px; text-align: center;}
-    nav a {color: white; margin: 10px; text-decoration: none; font-weight: bold; cursor: pointer;}
-    .hero {padding: 40px; text-align: center; background: #f5f5f5;}
+    body {margin: 0; font-family: Arial, sans-serif; background: #f9f9f9; color: #111;}
+    header {background: linear-gradient(90deg,#ff4e50,#f9d423); color: white; padding: 20px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);}
+    nav {background: #222; padding: 10px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2);}
+    nav a {color: white; margin: 10px; text-decoration: none; font-weight: bold; cursor: pointer; transition: 0.3s;}
+    nav a:hover {color: #ff4e50;}
+    .hero {padding: 40px; text-align: center; background: #f5f5f5; box-shadow: inset 0 0 10px rgba(0,0,0,0.05);}
     .products, #adminProducts {padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px;}
-    .card {border: 1px solid black; padding: 15px; text-align: center;}
-    .card img {width: 100%; height: 200px; object-fit: contain;}
-    button {background: black; color: white; border: none; padding: 10px; margin-top: 5px; cursor: pointer; width: 100%;}
+    .card {border-radius: 12px; padding: 15px; text-align: center; background: white; transition: transform 0.3s, box-shadow 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.1);}
+    .card:hover {transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.25);}
+    .card img {width: 100%; height: 200px; object-fit: contain; border-radius: 8px;}
+    button {background: linear-gradient(90deg,#ff4e50,#f9d423); color: white; border-radius: 8px; border: none; padding: 10px; margin-top: 5px; cursor: pointer; width: 100%; transition: transform 0.2s, box-shadow 0.2s;}
+    button:hover {transform: scale(1.05); box-shadow: 0 5px 15px rgba(0,0,0,0.3);}
     footer {background: black; color: white; text-align: center; padding: 15px; margin-top: 20px;}
     #cart, #admin {padding: 20px; display: none;}
-    input {width: 100%; padding: 8px; margin-bottom: 10px;}
+    input {width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #ccc;}
+    input[type="file"] {padding: 5px;}
   </style>
 </head>
 <body>
@@ -49,7 +53,7 @@
   <h2>Add / Manage Phones</h2>
   <input type="text" id="pname" placeholder="Phone Name">
   <input type="text" id="pprice" placeholder="Price (₦)">
-  <input type="text" id="pimage" placeholder="Image URL">
+  <input type="file" id="pimageFile" accept="image/*">
   <button onclick="addProduct()">Add Phone</button>
 
   <h3>Existing Products</h3>
@@ -68,8 +72,6 @@ let products = JSON.parse(localStorage.getItem("products")) || [
   {name:"Tecno Spark 20", price:"₦135,000", image:"https://via.placeholder.com/200"},
   {name:"Infinix Note 30", price:"₦180,000", image:"https://via.placeholder.com/200"}
 ];
-
-let cart = [];
 
 function displayProducts() {
   let shop = document.getElementById("shop");
@@ -105,21 +107,49 @@ function displayAdminProducts() {
 function addProduct() {
   let name = document.getElementById("pname").value;
   let price = document.getElementById("pprice").value;
-  let image = document.getElementById("pimage").value;
-  if(!name || !price || !image) { alert("Fill all fields ❌"); return; }
-  products.push({name, price, image});
-  localStorage.setItem("products", JSON.stringify(products));
-  alert("Product Added ✅");
-  displayProducts();
-  displayAdminProducts();
+  let fileInput = document.getElementById("pimageFile");
+  if(!name || !price || fileInput.files.length===0){ alert("Fill all fields ❌"); return; }
+
+  let reader = new FileReader();
+  reader.onload = function(e){
+    let image = e.target.result;
+    products.push({name, price, image});
+    localStorage.setItem("products", JSON.stringify(products));
+    alert("Product Added ✅");
+    displayProducts();
+    displayAdminProducts();
+  }
+  reader.readAsDataURL(fileInput.files[0]);
 }
 
 function editProduct(index) {
   let newName = prompt("Enter new phone name:", products[index].name);
   let newPrice = prompt("Enter new price:", products[index].price);
-  let newImage = prompt("Enter new image URL:", products[index].image);
-  if(newName && newPrice && newImage) {
-    products[index] = {name:newName, price:newPrice, image:newImage};
+  if(!newName || !newPrice) return;
+
+  // Ask if they want to replace the image
+  let replaceImage = confirm("Do you want to replace the image from your phone?");
+  if(replaceImage){
+    let fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = "image/*";
+    fileInput.onchange = function(){
+      let reader = new FileReader();
+      reader.onload = function(e){
+        products[index].image = e.target.result;
+        products[index].name = newName;
+        products[index].price = newPrice;
+        localStorage.setItem("products", JSON.stringify(products));
+        displayProducts();
+        displayAdminProducts();
+        alert("Product Updated ✅");
+      }
+      reader.readAsDataURL(fileInput.files[0]);
+    }
+    fileInput.click();
+  } else {
+    products[index].name = newName;
+    products[index].price = newPrice;
     localStorage.setItem("products", JSON.stringify(products));
     displayProducts();
     displayAdminProducts();
@@ -137,7 +167,7 @@ function deleteProduct(index) {
 }
 
 function addToCart(name, price) {
-  let number = "2349166710777"; // your real WhatsApp number
+  let number = "2349166710777";
   let msg = `Hello, I want to order:\n\nPhone: ${name}\nPrice: ${price}`;
   window.open(`https://wa.me/${number}?text=${encodeURIComponent(msg)}`);
 }
