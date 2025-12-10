@@ -3,87 +3,18 @@
 <head>
   <title>Paramount Phones & Gadgets</title>
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: white;
-      color: black;
-    }
-
-    header {
-      background: black;
-      color: white;
-      padding: 20px;
-      text-align: center;
-    }
-
-    nav {
-      background: #222;
-      padding: 10px;
-      text-align: center;
-    }
-
-    nav a {
-      color: white;
-      margin: 10px;
-      text-decoration: none;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .hero {
-      padding: 40px;
-      text-align: center;
-      background: #f5f5f5;
-    }
-
-    .products {
-      padding: 20px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 20px;
-    }
-
-    .card {
-      border: 1px solid black;
-      padding: 15px;
-      text-align: center;
-    }
-
-    .card img {
-      width: 100%;
-      height: 200px;
-      object-fit: contain;
-    }
-
-    button {
-      background: black;
-      color: white;
-      border: none;
-      padding: 10px;
-      margin-top: 5px;
-      cursor: pointer;
-      width: 100%;
-    }
-
-    footer {
-      background: black;
-      color: white;
-      text-align: center;
-      padding: 15px;
-      margin-top: 20px;
-    }
-
-    #cart, #admin {
-      padding: 20px;
-      display: none;
-    }
-
-    input {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 10px;
-    }
+    body {margin: 0; font-family: Arial, sans-serif; background: white; color: black;}
+    header {background: black; color: white; padding: 20px; text-align: center;}
+    nav {background: #222; padding: 10px; text-align: center;}
+    nav a {color: white; margin: 10px; text-decoration: none; font-weight: bold; cursor: pointer;}
+    .hero {padding: 40px; text-align: center; background: #f5f5f5;}
+    .products, #adminProducts {padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px;}
+    .card {border: 1px solid black; padding: 15px; text-align: center;}
+    .card img {width: 100%; height: 200px; object-fit: contain;}
+    button {background: black; color: white; border: none; padding: 10px; margin-top: 5px; cursor: pointer; width: 100%;}
+    footer {background: black; color: white; text-align: center; padding: 15px; margin-top: 20px;}
+    #cart, #admin {padding: 20px; display: none;}
+    input {width: 100%; padding: 8px; margin-bottom: 10px;}
   </style>
 </head>
 <body>
@@ -115,89 +46,115 @@
 
 <!-- ADMIN -->
 <div id="admin">
-  <h2>Add New Phone</h2>
-
+  <h2>Add / Manage Phones</h2>
   <input type="text" id="pname" placeholder="Phone Name">
   <input type="text" id="pprice" placeholder="Price (₦)">
   <input type="text" id="pimage" placeholder="Image URL">
-
   <button onclick="addProduct()">Add Phone</button>
+
+  <h3>Existing Products</h3>
+  <div id="adminProducts"></div>
 </div>
 
 <footer>
-  <p>Call / WhatsApp: 080-XXX-XXXX</p>
+  <p>Call / WhatsApp: +234 916 671 0777</p>
   <p>© 2025 Paramount Phones & Gadgets</p>
 </footer>
 
 <script>
-  let products = JSON.parse(localStorage.getItem("products")) || [
-    {name:"iPhone 13", price:"₦550,000", image:"https://via.placeholder.com/200"},
-    {name:"Samsung A14", price:"₦150,000", image:"https://via.placeholder.com/200"},
-    {name:"Tecno Spark 20", price:"₦135,000", image:"https://via.placeholder.com/200"},
-    {name:"Infinix Note 30", price:"₦180,000", image:"https://via.placeholder.com/200"}
-  ];
+let products = JSON.parse(localStorage.getItem("products")) || [
+  {name:"iPhone 13", price:"₦550,000", image:"https://via.placeholder.com/200"},
+  {name:"Samsung A14", price:"₦150,000", image:"https://via.placeholder.com/200"},
+  {name:"Tecno Spark 20", price:"₦135,000", image:"https://via.placeholder.com/200"},
+  {name:"Infinix Note 30", price:"₦180,000", image:"https://via.placeholder.com/200"}
+];
 
-  let cart = [];
+let cart = [];
 
-  function displayProducts() {
-    let shop = document.getElementById("shop");
-    shop.innerHTML = "";
+function displayProducts() {
+  let shop = document.getElementById("shop");
+  shop.innerHTML = "";
+  products.forEach((p, index) => {
+    shop.innerHTML += `
+      <div class="card">
+        <img src="${p.image}">
+        <h3>${p.name}</h3>
+        <p>${p.price}</p>
+        <button onclick="addToCart('${p.name}', '${p.price}')">Order on WhatsApp</button>
+      </div>
+    `;
+  });
+}
 
-    products.forEach((p) => {
-      shop.innerHTML += `
-        <div class="card">
-          <img src="${p.image}">
-          <h3>${p.name}</h3>
-          <p>${p.price}</p>
-          <button onclick="addToCart('${p.name}', '${p.price}')">Add To Cart</button>
-          <button onclick="buyNow('${p.name}')">Buy on WhatsApp</button>
-        </div>
-      `;
-    });
-  }
+function displayAdminProducts() {
+  let adminDiv = document.getElementById("adminProducts");
+  adminDiv.innerHTML = "";
+  products.forEach((p, index) => {
+    adminDiv.innerHTML += `
+      <div class="card">
+        <img src="${p.image}">
+        <h3>${p.name}</h3>
+        <p>${p.price}</p>
+        <button onclick="editProduct(${index})">✏️ Edit</button>
+        <button onclick="deleteProduct(${index})">🗑️ Delete</button>
+      </div>
+    `;
+  });
+}
 
-  function addToCart(name, price) {
-    cart.push({name, price});
-    alert("Added to cart ✅");
-    showCart();
-  }
-
-  function showCart() {
-    showSection("cart");
-    let cartBox = document.getElementById("cartItems");
-    cartBox.innerHTML = "";
-
-    cart.forEach((item) => {
-      cartBox.innerHTML += `<p>${item.name} - ${item.price}</p>`;
-    });
-  }
-
-  function buyNow(name) {
-    let number = "23480XXXXXXXX"; 
-    let msg = `Hello, I want to buy ${name}`;
-    window.open(`https://wa.me/${number}?text=${msg}`);
-  }
-
-  function addProduct() {
-    let name = document.getElementById("pname").value;
-    let price = document.getElementById("pprice").value;
-    let image = document.getElementById("pimage").value;
-
-    products.push({name, price, image});
-    localStorage.setItem("products", JSON.stringify(products));
-    alert("Product Added ✅");
-    displayProducts();
-  }
-
-  function showSection(section) {
-    document.getElementById("shop").style.display = "none";
-    document.getElementById("cart").style.display = "none";
-    document.getElementById("admin").style.display = "none";
-
-    document.getElementById(section).style.display = "block";
-  }
-
+function addProduct() {
+  let name = document.getElementById("pname").value;
+  let price = document.getElementById("pprice").value;
+  let image = document.getElementById("pimage").value;
+  if(!name || !price || !image) { alert("Fill all fields ❌"); return; }
+  products.push({name, price, image});
+  localStorage.setItem("products", JSON.stringify(products));
+  alert("Product Added ✅");
   displayProducts();
+  displayAdminProducts();
+}
+
+function editProduct(index) {
+  let newName = prompt("Enter new phone name:", products[index].name);
+  let newPrice = prompt("Enter new price:", products[index].price);
+  let newImage = prompt("Enter new image URL:", products[index].image);
+  if(newName && newPrice && newImage) {
+    products[index] = {name:newName, price:newPrice, image:newImage};
+    localStorage.setItem("products", JSON.stringify(products));
+    displayProducts();
+    displayAdminProducts();
+    alert("Product Updated ✅");
+  }
+}
+
+function deleteProduct(index) {
+  if(confirm("Delete this product?")) {
+    products.splice(index,1);
+    localStorage.setItem("products", JSON.stringify(products));
+    displayProducts();
+    displayAdminProducts();
+  }
+}
+
+function addToCart(name, price) {
+  let number = "2349166710777"; // your real WhatsApp number
+  let msg = `Hello, I want to order:\n\nPhone: ${name}\nPrice: ${price}`;
+  window.open(`https://wa.me/${number}?text=${encodeURIComponent(msg)}`);
+}
+
+function showSection(section) {
+  if(section==="admin"){
+    let pass = prompt("Enter Admin Password:");
+    if(pass !== "Paramountpaul123"){ alert("Wrong password ❌"); return; }
+  }
+  document.getElementById("shop").style.display="none";
+  document.getElementById("cart").style.display="none";
+  document.getElementById("admin").style.display="none";
+  document.getElementById(section).style.display="block";
+}
+
+displayProducts();
+displayAdminProducts();
 </script>
 
 </body>
