@@ -10,6 +10,7 @@
     nav a {color:white; margin:10px; text-decoration:none; font-weight:bold; cursor:pointer; transition:0.2s;}
     nav a:hover {color:#f9d423;}
     .hero {padding:50px 20px; text-align:center; background:linear-gradient(120deg,#ff4e50,#f9d423); color:white; box-shadow:inset 0 0 10px rgba(0,0,0,0.1); border-bottom-left-radius:20px; border-bottom-right-radius:20px;}
+    .hero h2, .hero p {margin:0 0 10px 0;}
     #searchWrapper {text-align:center; margin:20px;}
     #searchInput {padding:12px; width:90%; max-width:500px; border-radius:10px; border:1px solid #ccc; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
     .products, #adminProducts {padding:20px; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:20px;}
@@ -21,7 +22,7 @@
     button:hover {transform:scale(1.03); box-shadow:0 6px 18px rgba(0,0,0,0.18);}
     footer {background:black; color:white; text-align:center; padding:15px; margin-top:20px;}
     #cart, #admin {padding:20px; display:none;}
-    input[type=text], input[type=password], input[type=file] {width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box;}
+    input[type=text], input[type=password], input[type=file], input[type=color] {width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box;}
     .smallBtn {padding:6px; font-size:12px; margin-top:6px;}
     @media (max-width:520px){ .hero{padding:30px 12px;} .card img{height:160px;} }
   </style>
@@ -39,9 +40,9 @@
   <a onclick="showSection('admin')">Admin</a>
 </nav>
 
-<div class="hero">
-  <h2>Latest Phones at Hot Prices 🔥</h2>
-  <p>Order Directly via WhatsApp</p>
+<div class="hero" id="heroBanner">
+  <h2 id="heroHeading">Latest Phones at Hot Prices 🔥</h2>
+  <p id="heroSubheading">Order Directly via WhatsApp</p>
 </div>
 
 <div id="searchWrapper">
@@ -61,19 +62,22 @@
 <div id="admin">
   <h2>Add / Manage Phones</h2>
 
-  <!-- NAME & PRICE -->
+  <!-- HERO EDIT -->
+  <h3>Edit Hero Banner</h3>
+  <input type="text" id="heroHeadingInput" placeholder="Hero Heading">
+  <input type="text" id="heroSubheadingInput" placeholder="Hero Subheading">
+  <label>Gradient Start Color:</label>
+  <input type="color" id="heroColor1" value="#ff4e50">
+  <label>Gradient End Color:</label>
+  <input type="color" id="heroColor2" value="#f9d423">
+  <button class="smallBtn" onclick="saveHero()">Save Hero</button>
+
+  <h3>Add / Manage Phones</h3>
   <input type="text" id="pname" placeholder="Phone Name">
   <input type="text" id="pprice" placeholder="Price (₦)">
-
-  <!-- IMAGE URL (optional) -->
   <input type="text" id="pimage" placeholder="Image URL (optional)" oninput="previewURL()">
-
-  <!-- OR UPLOAD FROM PHONE -->
   <input type="file" id="pfile" accept="image/*" onchange="previewImage(event)">
-
-  <!-- Preview (file OR url) -->
   <img id="previewImg" src="" style="display:none; width:100%; max-height:220px; object-fit:contain; border-radius:12px; margin-bottom:10px;">
-
   <button onclick="addProduct()">Add Phone</button>
 
   <h3>Business Settings</h3>
@@ -82,16 +86,6 @@
 
   <input type="password" id="adminPassChange" placeholder="Change Admin Password">
   <button class="smallBtn" onclick="saveAdminPassword()">Save Password</button>
-
-  <h3>Forgot Password / Recovery</h3>
-  <select id="secQuestion">
-    <option value="">Select Security Question</option>
-    <option value="pet">What is your first pet's name?</option>
-    <option value="school">Name of your primary school?</option>
-    <option value="city">Your birth city?</option>
-  </select>
-  <input type="text" id="secAnswer" placeholder="Answer (for recovery)">
-  <button class="smallBtn" onclick="recoverPassword()">Recover / Set Answer</button>
 
   <h3>Existing Products</h3>
   <div id="adminProducts"></div>
@@ -113,23 +107,16 @@ let products = JSON.parse(localStorage.getItem("products")) || [
   {name:"Infinix Note 30", price:"₦180,000", image:"https://via.placeholder.com/200", hot:false}
 ];
 
-// visitor counter
 let visits = Number(localStorage.getItem("visits") || 0);
 visits++; localStorage.setItem("visits", visits);
 document.getElementById("visitCount").innerText = visits;
 
-// whatsapp number (editable)
 let waNumber = localStorage.getItem("waNumber") || "2349166710777";
 document.getElementById("waNumber").value = waNumber;
 document.getElementById("footerNumber").innerText = "+"+waNumber;
 
-// admin password
 let adminPass = localStorage.getItem("adminPass") || "Paramountpaul1";
 
-// security answers object (stored keyed by question id)
-let secAnswers = JSON.parse(localStorage.getItem("secAnswers") || "{}");
-
-// uploaded image (data URL) preview holder
 let uploadedImage = "";
 
 // ---------- preview helpers ----------
@@ -146,22 +133,12 @@ function previewImage(event){
   reader.readAsDataURL(file);
 }
 
-// preview when typing URL (only shows if no uploaded file present)
 function previewURL(){
   const url = document.getElementById("pimage").value.trim();
-  if(uploadedImage){
-    // file preview has priority; do nothing
-    return;
-  }
+  if(uploadedImage) return;
   const img = document.getElementById("previewImg");
-  if(!url){
-    img.style.display = "none";
-    img.src = "";
-    return;
-  }
-  // quick check: try using URL in img src; if it fails browser will not show it
-  img.src = url;
-  img.style.display = "block";
+  if(!url){ img.style.display = "none"; img.src = ""; return; }
+  img.src = url; img.style.display = "block";
 }
 
 // ---------- display functions ----------
@@ -198,181 +175,79 @@ function displayAdminProducts(){
   });
 }
 
-// ---------- add / edit / delete ----------
+// ---------- add/edit/delete ----------
 function addProduct(){
   const name = document.getElementById("pname").value.trim();
   const price = document.getElementById("pprice").value.trim();
   const urlImage = document.getElementById("pimage").value.trim();
-  // uploadedImage has priority
   const image = uploadedImage || urlImage;
-  if(!name || !price || !image){
-    alert("Fill name, price, and provide an image (URL or upload).");
-    return;
-  }
+  if(!name || !price || !image){ alert("Fill name, price, and provide an image."); return; }
   products.push({name, price, image, hot:false});
   localStorage.setItem("products", JSON.stringify(products));
-  // reset inputs
-  document.getElementById("pname").value = "";
-  document.getElementById("pprice").value = "";
-  document.getElementById("pimage").value = "";
-  document.getElementById("pfile").value = "";
-  uploadedImage = "";
-  document.getElementById("previewImg").style.display = "none";
-  displayProducts();
-  displayAdminProducts();
+  document.getElementById("pname").value=""; document.getElementById("pprice").value=""; document.getElementById("pimage").value=""; document.getElementById("pfile").value=""; uploadedImage="";
+  document.getElementById("previewImg").style.display="none";
+  displayProducts(); displayAdminProducts();
   alert("Product Added ✅");
 }
 
 function editProduct(index){
-  // preserve original image if user leaves blank
   const newName = prompt("Enter new phone name:", products[index].name);
   const newPrice = prompt("Enter new price:", products[index].price);
   const newImage = prompt("Enter new image URL (leave blank to keep current):", products[index].image);
   if(newName && newPrice){
-    products[index] = {
-      name: newName,
-      price: newPrice,
-      image: newImage ? newImage : products[index].image,
-      hot: products[index].hot
-    };
+    products[index] = {name:newName, price:newPrice, image:newImage?newImage:products[index].image, hot:products[index].hot};
     localStorage.setItem("products", JSON.stringify(products));
-    displayProducts();
-    displayAdminProducts();
+    displayProducts(); displayAdminProducts();
     alert("Product Updated ✅");
   }
 }
 
-function deleteProduct(index){
-  if(confirm("Delete this product?")){
-    products.splice(index,1);
-    localStorage.setItem("products", JSON.stringify(products));
-    displayProducts();
-    displayAdminProducts();
-  }
+function deleteProduct(index){ if(confirm("Delete this product?")){ products.splice(index,1); localStorage.setItem("products", JSON.stringify(products)); displayProducts(); displayAdminProducts(); } }
+function toggleHot(index){ products[index].hot = !products[index].hot; localStorage.setItem("products", JSON.stringify(products)); displayProducts(); displayAdminProducts(); }
+function orderWhatsApp(name, price){ const msg=`Hello, I want to order:\n\nPhone: ${name}\nPrice: ${price}\nWebsite: Paramount Phones & Gadgets\nDate: ${new Date().toLocaleDateString()}`; window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`); }
+function searchProducts(){ const q=document.getElementById("searchInput").value.trim().toLowerCase(); const shop=document.getElementById("shop"); shop.innerHTML=""; products.forEach(p=>{ if(p.name.toLowerCase().includes(q)){ shop.innerHTML+=`<div class="card">${p.hot?'<span class="hotBadge">Hot 🔥</span>':''}<img src="${p.image}" alt="${escapeHtml(p.name)}"><h3>${escapeHtml(p.name)}</h3><p>${escapeHtml(p.price)}</p><button onclick="orderWhatsApp('${escapeJs(p.name)}','${escapeJs(p.price)}')">Order on WhatsApp</button></div>`; } }); }
+
+// ---------- save business settings ----------
+function saveWhatsAppNumber(){ const val=document.getElementById("waNumber").value.trim(); if(!val){alert("Enter a valid WhatsApp number.");return;} waNumber=val; localStorage.setItem("waNumber",val); document.getElementById("footerNumber").innerText="+"+val; alert("WhatsApp number saved ✅"); }
+function saveAdminPassword(){ const val=document.getElementById("adminPassChange").value.trim(); if(!val){alert("Enter a valid password.");return;} adminPass=val; localStorage.setItem("adminPass",val); document.getElementById("adminPassChange").value=""; alert("Password saved ✅"); }
+
+// ---------- hero save ----------
+function saveHero(){
+  const heading=document.getElementById("heroHeadingInput").value.trim();
+  const subheading=document.getElementById("heroSubheadingInput").value.trim();
+  const color1=document.getElementById("heroColor1").value;
+  const color2=document.getElementById("heroColor2").value;
+  if(heading) document.getElementById("heroHeading").innerText=heading;
+  if(subheading) document.getElementById("heroSubheading").innerText=subheading;
+  document.getElementById("heroBanner").style.background=`linear-gradient(120deg,${color1},${color2})`;
+  localStorage.setItem("heroData", JSON.stringify({heading, subheading, color1, color2}));
+  alert("Hero banner updated ✅");
 }
 
-function toggleHot(index){
-  products[index].hot = !products[index].hot;
-  localStorage.setItem("products", JSON.stringify(products));
-  displayProducts();
-  displayAdminProducts();
-}
+// ---------- load hero data ----------
+const heroStored=JSON.parse(localStorage.getItem("heroData")||"{}");
+if(heroStored.heading) document.getElementById("heroHeading").innerText=heroStored.heading;
+if(heroStored.subheading) document.getElementById("heroSubheading").innerText=heroStored.subheading;
+if(heroStored.color1 && heroStored.color2) document.getElementById("heroBanner").style.background=`linear-gradient(120deg,${heroStored.color1},${heroStored.color2})`;
 
-// ---------- order/whatsapp ----------
-function orderWhatsApp(name, price){
-  const msg = `Hello, I want to order:\n\nPhone: ${name}\nPrice: ${price}\nWebsite: Paramount Phones & Gadgets\nDate: ${new Date().toLocaleDateString()}`;
-  window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`);
-}
-
-// ---------- search ----------
-function searchProducts(){
-  const q = document.getElementById("searchInput").value.trim().toLowerCase();
-  const shop = document.getElementById("shop");
-  shop.innerHTML = "";
-  products.forEach(p=>{
-    if(p.name.toLowerCase().includes(q)){
-      shop.innerHTML += `
-        <div class="card">
-          ${p.hot?'<span class="hotBadge">Hot 🔥</span>':''}
-          <img src="${p.image}" alt="${escapeHtml(p.name)}">
-          <h3>${escapeHtml(p.name)}</h3>
-          <p>${escapeHtml(p.price)}</p>
-          <button onclick="orderWhatsApp('${escapeJs(p.name)}','${escapeJs(p.price)}')">Order on WhatsApp</button>
-        </div>
-      `;
-    }
-  });
-}
-
-// ---------- admin settings: save number/password ----------
-function saveWhatsAppNumber(){
-  const val = document.getElementById("waNumber").value.trim();
-  if(!val){ alert("Enter a valid WhatsApp number."); return; }
-  waNumber = val;
-  localStorage.setItem("waNumber", val);
-  document.getElementById("footerNumber").innerText = "+" + val;
-  alert("WhatsApp number saved ✅");
-}
-
-function saveAdminPassword(){
-  const val = document.getElementById("adminPassChange").value.trim();
-  if(!val){ alert("Enter a valid password."); return; }
-  adminPass = val;
-  localStorage.setItem("adminPass", val);
-  document.getElementById("adminPassChange").value = "";
-  alert("Password saved ✅");
-}
-
-// ---------- security Qs: set & recover ----------
-function recoverPassword(){
-  const q = document.getElementById("secQuestion").value;
-  const a = document.getElementById("secAnswer").value.trim();
-  if(!q || !a){ alert("Choose a question and type an answer."); return; }
-
-  // if stored answer exists, validate
-  if(secAnswers[q]){
-    if(secAnswers[q].toLowerCase() === a.toLowerCase()){
-      // allow reset or show (owner choice); here we show and also allow reset prompt
-      if(confirm("Answer correct. Show current password? (OK = show, Cancel = reset password)")){
-        alert("Your password is: " + adminPass);
-      } else {
-        const newPass = prompt("Enter a new admin password (will replace current):");
-        if(newPass) {
-          adminPass = newPass;
-          localStorage.setItem("adminPass", adminPass);
-          alert("Password reset ✅");
-        }
-      }
-    } else {
-      alert("Wrong answer ❌");
-    }
-  } else {
-    // no stored answer for this question — offer to save this answer
-    if(confirm("No recovery answer set for this question. Save current answer for recovery?")){
-      secAnswers[q] = a;
-      localStorage.setItem("secAnswers", JSON.stringify(secAnswers));
-      alert("Recovery answer saved ✅");
-    } else {
-      alert("No action taken.");
-    }
-  }
-}
-
-// ---------- show section (admin login with 'forgot' option) ----------
+// ---------- show section ----------
 function showSection(section){
-  if(section === "admin"){
-    const pass = prompt("Enter Admin Password (or type 'forgot' to recover):");
-    if(pass === "forgot"){
-      // show small modal flow using recoverPassword UI: focus admin panel sec inputs
-      alert("You'll be prompted to answer a security question next. Select a question and enter the answer, then press Recover.");
-      // open admin so they can use recover UI
-      document.getElementById("shop").style.display = "none";
-      document.getElementById("cart").style.display = "none";
-      document.getElementById("admin").style.display = "block";
-      return;
-    }
-    if(pass !== adminPass){
-      alert("Wrong password ❌");
-      return;
-    }
+  if(section==="admin"){
+    const pass=prompt("Enter Admin Password:");
+    if(pass!==adminPass){ alert("Wrong password ❌"); return; }
   }
-  document.getElementById("shop").style.display = "none";
-  document.getElementById("cart").style.display = "none";
-  document.getElementById("admin").style.display = "none";
-  document.getElementById(section).style.display = "block";
+  document.getElementById("shop").style.display="none";
+  document.getElementById("cart").style.display="none";
+  document.getElementById("admin").style.display="none";
+  document.getElementById(section).style.display="block";
 }
 
-// small helpers to avoid injection in template strings
-function escapeHtml(str){
-  return String(str||"").replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
-}
-function escapeJs(str){
-  return String(str||"").replace(/'/g,"\\'");
-}
+// ---------- helpers ----------
+function escapeHtml(str){ return String(str||"").replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
+function escapeJs(str){ return String(str||"").replace(/'/g,"\\'"); }
 
 // ---------- init ----------
-displayProducts();
-displayAdminProducts();
+displayProducts(); displayAdminProducts();
 </script>
 
 </body>
