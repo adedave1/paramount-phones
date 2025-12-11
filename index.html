@@ -9,11 +9,10 @@
     nav {background:#111; padding:10px; text-align:center;}
     nav a {color:white; margin:10px; text-decoration:none; font-weight:bold; cursor:pointer; transition:0.2s;}
     nav a:hover {color:#f9d423;}
-    .hero {padding:50px 20px; text-align:center; background:linear-gradient(120deg,#ff4e50,#f9d423); color:white; box-shadow:inset 0 0 10px rgba(0,0,0,0.1); border-bottom-left-radius:20px; border-bottom-right-radius:20px;}
-    .hero h2, .hero p {margin:0 0 10px 0;}
+    .hero {padding:50px 20px; text-align:center; color:white; border-bottom-left-radius:20px; border-bottom-right-radius:20px; position:relative;}
     #searchWrapper {text-align:center; margin:20px;}
     #searchInput {padding:12px; width:90%; max-width:500px; border-radius:10px; border:1px solid #ccc; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
-    .products, #adminProducts {padding:20px; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:20px;}
+    .products, #adminProducts, #cartItemsWrapper {padding:20px; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:20px;}
     .card {border-radius:15px; padding:15px; text-align:center; background:white; transition:transform 0.25s, box-shadow 0.25s; box-shadow:0 4px 12px rgba(0,0,0,0.08); position:relative;}
     .card:hover {transform:translateY(-5px); box-shadow:0 10px 30px rgba(0,0,0,0.15);}
     .card img {width:100%; height:200px; object-fit:contain; border-radius:12px;}
@@ -40,9 +39,10 @@
   <a onclick="showSection('admin')">Admin</a>
 </nav>
 
-<div class="hero" id="heroBanner">
-  <h2 id="heroHeading">Latest Phones at Hot Prices 🔥</h2>
-  <p id="heroSubheading">Order Directly via WhatsApp</p>
+<div class="hero" id="heroSection">
+  <h2 id="heroTitle">Latest Phones at Hot Prices 🔥</h2>
+  <p id="heroText">Order Directly via WhatsApp</p>
+  <button id="heroBtn" onclick="openWhatsApp()">Order Now</button>
 </div>
 
 <div id="searchWrapper">
@@ -55,24 +55,17 @@
 <!-- CART -->
 <div id="cart">
   <h2>Your Cart</h2>
-  <div id="cartItems"></div>
+  <div id="cartItemsWrapper"></div>
+  <input type="text" id="buyerName" placeholder="Your Name">
+  <input type="text" id="buyerPhone" placeholder="Phone Number">
+  <input type="text" id="buyerAddress" placeholder="Delivery Address">
+  <button onclick="checkout()">Pay & Order</button>
 </div>
 
 <!-- ADMIN -->
 <div id="admin">
   <h2>Add / Manage Phones</h2>
 
-  <!-- HERO EDIT -->
-  <h3>Edit Hero Banner</h3>
-  <input type="text" id="heroHeadingInput" placeholder="Hero Heading">
-  <input type="text" id="heroSubheadingInput" placeholder="Hero Subheading">
-  <label>Gradient Start Color:</label>
-  <input type="color" id="heroColor1" value="#ff4e50">
-  <label>Gradient End Color:</label>
-  <input type="color" id="heroColor2" value="#f9d423">
-  <button class="smallBtn" onclick="saveHero()">Save Hero</button>
-
-  <h3>Add / Manage Phones</h3>
   <input type="text" id="pname" placeholder="Phone Name">
   <input type="text" id="pprice" placeholder="Price (₦)">
   <input type="text" id="pimage" placeholder="Image URL (optional)" oninput="previewURL()">
@@ -83,13 +76,19 @@
   <h3>Business Settings</h3>
   <input type="text" id="waNumber" placeholder="WhatsApp Number">
   <button class="smallBtn" onclick="saveWhatsAppNumber()">Save Number</button>
-
   <input type="password" id="adminPassChange" placeholder="Change Admin Password">
   <button class="smallBtn" onclick="saveAdminPassword()">Save Password</button>
 
+  <h3>Edit Hero Section</h3>
+  <input type="text" id="adminHeroTitle" placeholder="Hero Title">
+  <input type="text" id="adminHeroText" placeholder="Hero Text">
+  <input type="text" id="adminHeroBtnText" placeholder="Hero Button Text">
+  <input type="color" id="adminHeroColor1" value="#ff4e50">
+  <input type="color" id="adminHeroColor2" value="#f9d423">
+  <button class="smallBtn" onclick="saveHero()">Save Hero</button>
+
   <h3>Existing Products</h3>
   <div id="adminProducts"></div>
-
   <h3>Visitor Count: <span id="visitCount">0</span></h3>
 </div>
 
@@ -98,28 +97,36 @@
   <p>© 2025 Paramount Phones & Gadgets</p>
 </footer>
 
+<script src="https://js.paystack.co/v1/inline.js"></script>
+
 <script>
-// ---------- data & localStorage ----------
+// ---------- data ----------
 let products = JSON.parse(localStorage.getItem("products")) || [
-  {name:"iPhone 13", price:"₦550,000", image:"https://via.placeholder.com/200", hot:true},
-  {name:"Samsung A14", price:"₦150,000", image:"https://via.placeholder.com/200", hot:false},
-  {name:"Tecno Spark 20", price:"₦135,000", image:"https://via.placeholder.com/200", hot:false},
-  {name:"Infinix Note 30", price:"₦180,000", image:"https://via.placeholder.com/200", hot:false}
+  {name:"iPhone 13", price:550000, image:"https://via.placeholder.com/200", hot:true},
+  {name:"Samsung A14", price:150000, image:"https://via.placeholder.com/200", hot:false},
+  {name:"Tecno Spark 20", price:135000, image:"https://via.placeholder.com/200", hot:false},
+  {name:"Infinix Note 30", price:180000, image:"https://via.placeholder.com/200", hot:false}
 ];
 
+let cart = [];
+
+// visitor counter
 let visits = Number(localStorage.getItem("visits") || 0);
 visits++; localStorage.setItem("visits", visits);
 document.getElementById("visitCount").innerText = visits;
 
+// WhatsApp number
 let waNumber = localStorage.getItem("waNumber") || "2349166710777";
 document.getElementById("waNumber").value = waNumber;
 document.getElementById("footerNumber").innerText = "+"+waNumber;
 
+// admin password
 let adminPass = localStorage.getItem("adminPass") || "Paramountpaul1";
 
+// uploaded image
 let uploadedImage = "";
 
-// ---------- preview helpers ----------
+// ---------- preview ----------
 function previewImage(event){
   const file = event.target.files && event.target.files[0];
   if(!file) return;
@@ -132,16 +139,15 @@ function previewImage(event){
   }
   reader.readAsDataURL(file);
 }
-
 function previewURL(){
   const url = document.getElementById("pimage").value.trim();
   if(uploadedImage) return;
   const img = document.getElementById("previewImg");
-  if(!url){ img.style.display = "none"; img.src = ""; return; }
-  img.src = url; img.style.display = "block";
+  if(!url){ img.style.display="none"; img.src=""; return; }
+  img.src = url; img.style.display="block";
 }
 
-// ---------- display functions ----------
+// ---------- display ----------
 function displayProducts(){
   const shop = document.getElementById("shop");
   shop.innerHTML = "";
@@ -151,8 +157,8 @@ function displayProducts(){
         ${p.hot?'<span class="hotBadge">Hot 🔥</span>':''}
         <img src="${p.image}" alt="${escapeHtml(p.name)}">
         <h3>${escapeHtml(p.name)}</h3>
-        <p>${escapeHtml(p.price)}</p>
-        <button onclick="orderWhatsApp('${escapeJs(p.name)}','${escapeJs(p.price)}')">Order on WhatsApp</button>
+        <p>₦${Number(p.price).toLocaleString()}</p>
+        <button onclick="addToCart(${i})">Add to Cart</button>
       </div>
     `;
   });
@@ -166,7 +172,7 @@ function displayAdminProducts(){
       <div class="card">
         <img src="${p.image}" alt="${escapeHtml(p.name)}">
         <h3>${escapeHtml(p.name)}</h3>
-        <p>${escapeHtml(p.price)}</p>
+        <p>₦${Number(p.price).toLocaleString()}</p>
         <button class="smallBtn" onclick="editProduct(${i})">✏️ Edit</button>
         <button class="smallBtn" onclick="deleteProduct(${i})">🗑️ Delete</button>
         <button class="smallBtn" onclick="toggleHot(${i})">${p.hot?'🔥 Remove Hot':'🔥 Mark Hot'}</button>
@@ -175,19 +181,18 @@ function displayAdminProducts(){
   });
 }
 
-// ---------- add/edit/delete ----------
+// ---------- add / edit / delete ----------
 function addProduct(){
   const name = document.getElementById("pname").value.trim();
   const price = document.getElementById("pprice").value.trim();
   const urlImage = document.getElementById("pimage").value.trim();
   const image = uploadedImage || urlImage;
-  if(!name || !price || !image){ alert("Fill name, price, and provide an image."); return; }
-  products.push({name, price, image, hot:false});
+  if(!name || !price || !image){ alert("Fill name, price, image."); return; }
+  products.push({name, price:parseFloat(price), image, hot:false});
   localStorage.setItem("products", JSON.stringify(products));
   document.getElementById("pname").value=""; document.getElementById("pprice").value=""; document.getElementById("pimage").value=""; document.getElementById("pfile").value=""; uploadedImage="";
   document.getElementById("previewImg").style.display="none";
-  displayProducts(); displayAdminProducts();
-  alert("Product Added ✅");
+  displayProducts(); displayAdminProducts(); alert("Product Added ✅");
 }
 
 function editProduct(index){
@@ -195,44 +200,109 @@ function editProduct(index){
   const newPrice = prompt("Enter new price:", products[index].price);
   const newImage = prompt("Enter new image URL (leave blank to keep current):", products[index].image);
   if(newName && newPrice){
-    products[index] = {name:newName, price:newPrice, image:newImage?newImage:products[index].image, hot:products[index].hot};
+    products[index] = {name:newName, price:parseFloat(newPrice), image:newImage?newImage:products[index].image, hot:products[index].hot};
     localStorage.setItem("products", JSON.stringify(products));
-    displayProducts(); displayAdminProducts();
-    alert("Product Updated ✅");
+    displayProducts(); displayAdminProducts(); alert("Product Updated ✅");
   }
 }
 
 function deleteProduct(index){ if(confirm("Delete this product?")){ products.splice(index,1); localStorage.setItem("products", JSON.stringify(products)); displayProducts(); displayAdminProducts(); } }
-function toggleHot(index){ products[index].hot = !products[index].hot; localStorage.setItem("products", JSON.stringify(products)); displayProducts(); displayAdminProducts(); }
-function orderWhatsApp(name, price){ const msg=`Hello, I want to order:\n\nPhone: ${name}\nPrice: ${price}\nWebsite: Paramount Phones & Gadgets\nDate: ${new Date().toLocaleDateString()}`; window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`); }
-function searchProducts(){ const q=document.getElementById("searchInput").value.trim().toLowerCase(); const shop=document.getElementById("shop"); shop.innerHTML=""; products.forEach(p=>{ if(p.name.toLowerCase().includes(q)){ shop.innerHTML+=`<div class="card">${p.hot?'<span class="hotBadge">Hot 🔥</span>':''}<img src="${p.image}" alt="${escapeHtml(p.name)}"><h3>${escapeHtml(p.name)}</h3><p>${escapeHtml(p.price)}</p><button onclick="orderWhatsApp('${escapeJs(p.name)}','${escapeJs(p.price)}')">Order on WhatsApp</button></div>`; } }); }
+function toggleHot(index){ products[index].hot=!products[index].hot; localStorage.setItem("products", JSON.stringify(products)); displayProducts(); displayAdminProducts(); }
 
-// ---------- save business settings ----------
-function saveWhatsAppNumber(){ const val=document.getElementById("waNumber").value.trim(); if(!val){alert("Enter a valid WhatsApp number.");return;} waNumber=val; localStorage.setItem("waNumber",val); document.getElementById("footerNumber").innerText="+"+val; alert("WhatsApp number saved ✅"); }
-function saveAdminPassword(){ const val=document.getElementById("adminPassChange").value.trim(); if(!val){alert("Enter a valid password.");return;} adminPass=val; localStorage.setItem("adminPass",val); document.getElementById("adminPassChange").value=""; alert("Password saved ✅"); }
+// ---------- cart ----------
+function addToCart(i){ cart.push(products[i]); displayCart(); alert("Added to Cart ✅"); }
+function displayCart(){
+  const cartDiv = document.getElementById("cartItemsWrapper");
+  cartDiv.innerHTML = "";
+  let total = 0;
+  cart.forEach((p,i)=>{
+    total += Number(p.price);
+    cartDiv.innerHTML += `
+      <div class="card">
+        <img src="${p.image}">
+        <h3>${escapeHtml(p.name)}</h3>
+        <p>₦${Number(p.price).toLocaleString()}</p>
+        <button onclick="removeFromCart(${i})">Remove</button>
+      </div>
+    `;
+  });
+  if(cart.length > 0){
+    cartDiv.innerHTML += `<h3>Total: ₦${total.toLocaleString()}</h3>`;
+  }
+}
+function removeFromCart(i){ cart.splice(i,1); displayCart(); }
 
-// ---------- hero save ----------
-function saveHero(){
-  const heading=document.getElementById("heroHeadingInput").value.trim();
-  const subheading=document.getElementById("heroSubheadingInput").value.trim();
-  const color1=document.getElementById("heroColor1").value;
-  const color2=document.getElementById("heroColor2").value;
-  if(heading) document.getElementById("heroHeading").innerText=heading;
-  if(subheading) document.getElementById("heroSubheading").innerText=subheading;
-  document.getElementById("heroBanner").style.background=`linear-gradient(120deg,${color1},${color2})`;
-  localStorage.setItem("heroData", JSON.stringify({heading, subheading, color1, color2}));
-  alert("Hero banner updated ✅");
+// ---------- checkout ----------
+function checkout(){
+  const name = document.getElementById("buyerName").value.trim();
+  const phone = document.getElementById("buyerPhone").value.trim();
+  const address = document.getElementById("buyerAddress").value.trim();
+  if(!name || !phone || !address || cart.length===0){ alert("Fill details & cart cannot be empty"); return; }
+
+  const total = cart.reduce((sum,item) => sum + Number(item.price), 0);
+
+  let orderDesc = "Order Details:\n";
+  cart.forEach(p => {
+    orderDesc += `${p.name} - ₦${Number(p.price).toLocaleString()}\n`;
+  });
+
+  var handler = PaystackPop.setup({
+    key: 'pk_test_162ba6ca046d82c62b847013ea3230a862921046',
+    email: phone+'@email.com',
+    amount: total*100,
+    currency: "NGN",
+    ref: '' + Math.floor(Math.random()*1000000000+1),
+    metadata: {custom_fields:[
+      {display_name:"Customer Name", value:name},
+      {display_name:"Phone", value:phone},
+      {display_name:"Address", value:address}
+    ]},
+    callback: function(response){
+      alert('Payment Successful ✅\nRef: '+response.reference+'\n\n'+orderDesc);
+      cart=[]; displayCart();
+    },
+    onClose: function(){ alert('Payment Cancelled ❌'); }
+  });
+
+  handler.openIframe();
 }
 
-// ---------- load hero data ----------
-const heroStored=JSON.parse(localStorage.getItem("heroData")||"{}");
-if(heroStored.heading) document.getElementById("heroHeading").innerText=heroStored.heading;
-if(heroStored.subheading) document.getElementById("heroSubheading").innerText=heroStored.subheading;
-if(heroStored.color1 && heroStored.color2) document.getElementById("heroBanner").style.background=`linear-gradient(120deg,${heroStored.color1},${heroStored.color2})`;
+// ---------- admin settings ----------
+function saveWhatsAppNumber(){ const val=document.getElementById("waNumber").value.trim(); if(!val){ alert("Enter number"); return; } waNumber=val; localStorage.setItem("waNumber",val); document.getElementById("footerNumber").innerText="+"+val; alert("WhatsApp number saved ✅"); }
+function saveAdminPassword(){ const val=document.getElementById("adminPassChange").value.trim(); if(!val){ alert("Enter password"); return; } adminPass=val; localStorage.setItem("adminPass",val); document.getElementById("adminPassChange").value=""; alert("Password saved ✅"); }
+function saveHero(){
+  const title=document.getElementById("adminHeroTitle").value.trim();
+  const text=document.getElementById("adminHeroText").value.trim();
+  const btnText=document.getElementById("adminHeroBtnText").value.trim();
+  const color1=document.getElementById("adminHeroColor1").value;
+  const color2=document.getElementById("adminHeroColor2").value;
+  if(title) document.getElementById("heroTitle").innerText=title;
+  if(text) document.getElementById("heroText").innerText=text;
+  if(btnText) document.getElementById("heroBtn").innerText=btnText;
+  document.getElementById("heroSection").style.background=`linear-gradient(120deg,${color1},${color2})`;
+  alert("Hero Section Updated ✅");
+}
+
+// ---------- hero WhatsApp order ----------
+function openWhatsApp(){
+  window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent("Hello, I want to order via the hero button")}`);
+}
+
+// ---------- search ----------
+function searchProducts(){
+  const q=document.getElementById("searchInput").value.trim().toLowerCase();
+  const shop=document.getElementById("shop");
+  shop.innerHTML="";
+  products.forEach((p,i)=>{
+    if(p.name.toLowerCase().includes(q)){
+      shop.innerHTML+=`<div class="card">${p.hot?'<span class="hotBadge">Hot 🔥</span>':''}<img src="${p.image}"><h3>${escapeHtml(p.name)}</h3><p>₦${Number(p.price).toLocaleString()}</p><button onclick="addToCart(${i})">Add to Cart</button></div>`;
+    }
+  });
+}
 
 // ---------- show section ----------
 function showSection(section){
-  if(section==="admin"){
+  if(section==='admin'){
     const pass=prompt("Enter Admin Password:");
     if(pass!==adminPass){ alert("Wrong password ❌"); return; }
   }
@@ -244,10 +314,9 @@ function showSection(section){
 
 // ---------- helpers ----------
 function escapeHtml(str){ return String(str||"").replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
-function escapeJs(str){ return String(str||"").replace(/'/g,"\\'"); }
 
-// ---------- init ----------
-displayProducts(); displayAdminProducts();
+displayProducts();
+displayAdminProducts();
 </script>
 
 </body>
