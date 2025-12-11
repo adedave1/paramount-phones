@@ -2,23 +2,28 @@
 <html>
 <head>
   <title>Paramount Phones & Gadgets</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
-    body {margin: 0; font-family: Arial, sans-serif; background: #f9f9f9; color: #111;}
-    header {background: linear-gradient(90deg,#ff4e50,#f9d423); color: white; padding: 20px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);}
-    nav {background: #222; padding: 10px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2);}
-    nav a {color: white; margin: 10px; text-decoration: none; font-weight: bold; cursor: pointer; transition: 0.3s;}
-    nav a:hover {color: #ff4e50;}
-    .hero {padding: 40px; text-align: center; background: #f5f5f5; box-shadow: inset 0 0 10px rgba(0,0,0,0.05);}
-    .products, #adminProducts {padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px;}
-    .card {border-radius: 12px; padding: 15px; text-align: center; background: white; transition: transform 0.3s, box-shadow 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.1);}
-    .card:hover {transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.25);}
-    .card img {width: 100%; height: 200px; object-fit: contain; border-radius: 8px;}
-    button {background: linear-gradient(90deg,#ff4e50,#f9d423); color: white; border-radius: 8px; border: none; padding: 10px; margin-top: 5px; cursor: pointer; width: 100%; transition: transform 0.2s, box-shadow 0.2s;}
-    button:hover {transform: scale(1.05); box-shadow: 0 5px 15px rgba(0,0,0,0.3);}
-    footer {background: black; color: white; text-align: center; padding: 15px; margin-top: 20px;}
-    #cart, #admin {padding: 20px; display: none;}
-    input {width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #ccc;}
-    input[type="file"] {padding: 5px;}
+    body {margin:0; font-family:Arial,sans-serif; background:#f9f9f9; color:#111;}
+    header {background:#222; color:white; padding:20px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.3);}
+    nav {background:#111; padding:10px; text-align:center;}
+    nav a {color:white; margin:10px; text-decoration:none; font-weight:bold; cursor:pointer; transition:0.2s;}
+    nav a:hover {color:#f9d423;}
+    .hero {padding:50px 20px; text-align:center; background:linear-gradient(120deg,#ff4e50,#f9d423); color:white; box-shadow:inset 0 0 10px rgba(0,0,0,0.1); border-bottom-left-radius:20px; border-bottom-right-radius:20px;}
+    #searchWrapper {text-align:center; margin:20px;}
+    #searchInput {padding:12px; width:90%; max-width:500px; border-radius:10px; border:1px solid #ccc; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+    .products, #adminProducts {padding:20px; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:20px;}
+    .card {border-radius:15px; padding:15px; text-align:center; background:white; transition:transform 0.25s, box-shadow 0.25s; box-shadow:0 4px 12px rgba(0,0,0,0.08); position:relative;}
+    .card:hover {transform:translateY(-5px); box-shadow:0 10px 30px rgba(0,0,0,0.15);}
+    .card img {width:100%; height:200px; object-fit:contain; border-radius:12px;}
+    .hotBadge {position:absolute; top:10px; right:10px; background:red; color:white; padding:5px 10px; border-radius:12px; font-size:12px; font-weight:bold;}
+    button {background:linear-gradient(90deg,#ff4e50,#f9d423); color:white; border-radius:10px; border:none; padding:12px; margin-top:8px; cursor:pointer; width:100%; font-weight:700; transition:transform .15s, box-shadow .15s;}
+    button:hover {transform:scale(1.03); box-shadow:0 6px 18px rgba(0,0,0,0.18);}
+    footer {background:black; color:white; text-align:center; padding:15px; margin-top:20px;}
+    #cart, #admin {padding:20px; display:none;}
+    input[type=text], input[type=password], input[type=file] {width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box;}
+    .smallBtn {padding:6px; font-size:12px; margin-top:6px;}
+    @media (max-width:520px){ .hero{padding:30px 12px;} .card img{height:160px;} }
   </style>
 </head>
 <body>
@@ -39,6 +44,10 @@
   <p>Order Directly via WhatsApp</p>
 </div>
 
+<div id="searchWrapper">
+  <input type="text" id="searchInput" placeholder="Search phones..." onkeyup="searchProducts()">
+</div>
+
 <!-- SHOP -->
 <div class="products" id="shop"></div>
 
@@ -51,105 +60,181 @@
 <!-- ADMIN -->
 <div id="admin">
   <h2>Add / Manage Phones</h2>
+
+  <!-- NAME & PRICE -->
   <input type="text" id="pname" placeholder="Phone Name">
   <input type="text" id="pprice" placeholder="Price (₦)">
-  <input type="file" id="pimageFile" accept="image/*">
+
+  <!-- IMAGE URL (optional) -->
+  <input type="text" id="pimage" placeholder="Image URL (optional)" oninput="previewURL()">
+
+  <!-- OR UPLOAD FROM PHONE -->
+  <input type="file" id="pfile" accept="image/*" onchange="previewImage(event)">
+
+  <!-- Preview (file OR url) -->
+  <img id="previewImg" src="" style="display:none; width:100%; max-height:220px; object-fit:contain; border-radius:12px; margin-bottom:10px;">
+
   <button onclick="addProduct()">Add Phone</button>
+
+  <h3>Business Settings</h3>
+  <input type="text" id="waNumber" placeholder="WhatsApp Number">
+  <button class="smallBtn" onclick="saveWhatsAppNumber()">Save Number</button>
+
+  <input type="password" id="adminPassChange" placeholder="Change Admin Password">
+  <button class="smallBtn" onclick="saveAdminPassword()">Save Password</button>
+
+  <h3>Forgot Password / Recovery</h3>
+  <select id="secQuestion">
+    <option value="">Select Security Question</option>
+    <option value="pet">What is your first pet's name?</option>
+    <option value="school">Name of your primary school?</option>
+    <option value="city">Your birth city?</option>
+  </select>
+  <input type="text" id="secAnswer" placeholder="Answer (for recovery)">
+  <button class="smallBtn" onclick="recoverPassword()">Recover / Set Answer</button>
 
   <h3>Existing Products</h3>
   <div id="adminProducts"></div>
+
+  <h3>Visitor Count: <span id="visitCount">0</span></h3>
 </div>
 
 <footer>
-  <p>Call / WhatsApp: +234 916 671 0777</p>
+  <p>Call / WhatsApp: <span id="footerNumber">+234 916 671 0777</span></p>
   <p>© 2025 Paramount Phones & Gadgets</p>
 </footer>
 
 <script>
+// ---------- data & localStorage ----------
 let products = JSON.parse(localStorage.getItem("products")) || [
-  {name:"iPhone 13", price:"₦550,000", image:"https://via.placeholder.com/200"},
-  {name:"Samsung A14", price:"₦150,000", image:"https://via.placeholder.com/200"},
-  {name:"Tecno Spark 20", price:"₦135,000", image:"https://via.placeholder.com/200"},
-  {name:"Infinix Note 30", price:"₦180,000", image:"https://via.placeholder.com/200"}
+  {name:"iPhone 13", price:"₦550,000", image:"https://via.placeholder.com/200", hot:true},
+  {name:"Samsung A14", price:"₦150,000", image:"https://via.placeholder.com/200", hot:false},
+  {name:"Tecno Spark 20", price:"₦135,000", image:"https://via.placeholder.com/200", hot:false},
+  {name:"Infinix Note 30", price:"₦180,000", image:"https://via.placeholder.com/200", hot:false}
 ];
 
-function displayProducts() {
-  let shop = document.getElementById("shop");
+// visitor counter
+let visits = Number(localStorage.getItem("visits") || 0);
+visits++; localStorage.setItem("visits", visits);
+document.getElementById("visitCount").innerText = visits;
+
+// whatsapp number (editable)
+let waNumber = localStorage.getItem("waNumber") || "2349166710777";
+document.getElementById("waNumber").value = waNumber;
+document.getElementById("footerNumber").innerText = "+"+waNumber;
+
+// admin password
+let adminPass = localStorage.getItem("adminPass") || "Paramountpaul1";
+
+// security answers object (stored keyed by question id)
+let secAnswers = JSON.parse(localStorage.getItem("secAnswers") || "{}");
+
+// uploaded image (data URL) preview holder
+let uploadedImage = "";
+
+// ---------- preview helpers ----------
+function previewImage(event){
+  const file = event.target.files && event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(){
+    uploadedImage = reader.result;
+    const img = document.getElementById("previewImg");
+    img.src = uploadedImage;
+    img.style.display = "block";
+  }
+  reader.readAsDataURL(file);
+}
+
+// preview when typing URL (only shows if no uploaded file present)
+function previewURL(){
+  const url = document.getElementById("pimage").value.trim();
+  if(uploadedImage){
+    // file preview has priority; do nothing
+    return;
+  }
+  const img = document.getElementById("previewImg");
+  if(!url){
+    img.style.display = "none";
+    img.src = "";
+    return;
+  }
+  // quick check: try using URL in img src; if it fails browser will not show it
+  img.src = url;
+  img.style.display = "block";
+}
+
+// ---------- display functions ----------
+function displayProducts(){
+  const shop = document.getElementById("shop");
   shop.innerHTML = "";
-  products.forEach((p, index) => {
+  products.forEach((p,i)=>{
     shop.innerHTML += `
       <div class="card">
-        <img src="${p.image}">
-        <h3>${p.name}</h3>
-        <p>${p.price}</p>
-        <button onclick="addToCart('${p.name}', '${p.price}')">Order on WhatsApp</button>
+        ${p.hot?'<span class="hotBadge">Hot 🔥</span>':''}
+        <img src="${p.image}" alt="${escapeHtml(p.name)}">
+        <h3>${escapeHtml(p.name)}</h3>
+        <p>${escapeHtml(p.price)}</p>
+        <button onclick="orderWhatsApp('${escapeJs(p.name)}','${escapeJs(p.price)}')">Order on WhatsApp</button>
       </div>
     `;
   });
 }
 
-function displayAdminProducts() {
-  let adminDiv = document.getElementById("adminProducts");
+function displayAdminProducts(){
+  const adminDiv = document.getElementById("adminProducts");
   adminDiv.innerHTML = "";
-  products.forEach((p, index) => {
+  products.forEach((p,i)=>{
     adminDiv.innerHTML += `
       <div class="card">
-        <img src="${p.image}">
-        <h3>${p.name}</h3>
-        <p>${p.price}</p>
-        <button onclick="editProduct(${index})">✏️ Edit</button>
-        <button onclick="deleteProduct(${index})">🗑️ Delete</button>
+        <img src="${p.image}" alt="${escapeHtml(p.name)}">
+        <h3>${escapeHtml(p.name)}</h3>
+        <p>${escapeHtml(p.price)}</p>
+        <button class="smallBtn" onclick="editProduct(${i})">✏️ Edit</button>
+        <button class="smallBtn" onclick="deleteProduct(${i})">🗑️ Delete</button>
+        <button class="smallBtn" onclick="toggleHot(${i})">${p.hot?'🔥 Remove Hot':'🔥 Mark Hot'}</button>
       </div>
     `;
   });
 }
 
-function addProduct() {
-  let name = document.getElementById("pname").value;
-  let price = document.getElementById("pprice").value;
-  let fileInput = document.getElementById("pimageFile");
-  if(!name || !price || fileInput.files.length===0){ alert("Fill all fields ❌"); return; }
-
-  let reader = new FileReader();
-  reader.onload = function(e){
-    let image = e.target.result;
-    products.push({name, price, image});
-    localStorage.setItem("products", JSON.stringify(products));
-    alert("Product Added ✅");
-    displayProducts();
-    displayAdminProducts();
+// ---------- add / edit / delete ----------
+function addProduct(){
+  const name = document.getElementById("pname").value.trim();
+  const price = document.getElementById("pprice").value.trim();
+  const urlImage = document.getElementById("pimage").value.trim();
+  // uploadedImage has priority
+  const image = uploadedImage || urlImage;
+  if(!name || !price || !image){
+    alert("Fill name, price, and provide an image (URL or upload).");
+    return;
   }
-  reader.readAsDataURL(fileInput.files[0]);
+  products.push({name, price, image, hot:false});
+  localStorage.setItem("products", JSON.stringify(products));
+  // reset inputs
+  document.getElementById("pname").value = "";
+  document.getElementById("pprice").value = "";
+  document.getElementById("pimage").value = "";
+  document.getElementById("pfile").value = "";
+  uploadedImage = "";
+  document.getElementById("previewImg").style.display = "none";
+  displayProducts();
+  displayAdminProducts();
+  alert("Product Added ✅");
 }
 
-function editProduct(index) {
-  let newName = prompt("Enter new phone name:", products[index].name);
-  let newPrice = prompt("Enter new price:", products[index].price);
-  if(!newName || !newPrice) return;
-
-  // Ask if they want to replace the image
-  let replaceImage = confirm("Do you want to replace the image from your phone?");
-  if(replaceImage){
-    let fileInput = document.createElement("input");
-    fileInput.type = "file";
-    fileInput.accept = "image/*";
-    fileInput.onchange = function(){
-      let reader = new FileReader();
-      reader.onload = function(e){
-        products[index].image = e.target.result;
-        products[index].name = newName;
-        products[index].price = newPrice;
-        localStorage.setItem("products", JSON.stringify(products));
-        displayProducts();
-        displayAdminProducts();
-        alert("Product Updated ✅");
-      }
-      reader.readAsDataURL(fileInput.files[0]);
-    }
-    fileInput.click();
-  } else {
-    products[index].name = newName;
-    products[index].price = newPrice;
+function editProduct(index){
+  // preserve original image if user leaves blank
+  const newName = prompt("Enter new phone name:", products[index].name);
+  const newPrice = prompt("Enter new price:", products[index].price);
+  const newImage = prompt("Enter new image URL (leave blank to keep current):", products[index].image);
+  if(newName && newPrice){
+    products[index] = {
+      name: newName,
+      price: newPrice,
+      image: newImage ? newImage : products[index].image,
+      hot: products[index].hot
+    };
     localStorage.setItem("products", JSON.stringify(products));
     displayProducts();
     displayAdminProducts();
@@ -157,8 +242,8 @@ function editProduct(index) {
   }
 }
 
-function deleteProduct(index) {
-  if(confirm("Delete this product?")) {
+function deleteProduct(index){
+  if(confirm("Delete this product?")){
     products.splice(index,1);
     localStorage.setItem("products", JSON.stringify(products));
     displayProducts();
@@ -166,23 +251,126 @@ function deleteProduct(index) {
   }
 }
 
-function addToCart(name, price) {
-  let number = "2349166710777";
-  let msg = `Hello, I want to order:\n\nPhone: ${name}\nPrice: ${price}`;
-  window.open(`https://wa.me/${number}?text=${encodeURIComponent(msg)}`);
+function toggleHot(index){
+  products[index].hot = !products[index].hot;
+  localStorage.setItem("products", JSON.stringify(products));
+  displayProducts();
+  displayAdminProducts();
 }
 
-function showSection(section) {
-  if(section==="admin"){
-    let pass = prompt("Enter Admin Password:");
-    if(pass !== "Paramountpaul123"){ alert("Wrong password ❌"); return; }
+// ---------- order/whatsapp ----------
+function orderWhatsApp(name, price){
+  const msg = `Hello, I want to order:\n\nPhone: ${name}\nPrice: ${price}\nWebsite: Paramount Phones & Gadgets\nDate: ${new Date().toLocaleDateString()}`;
+  window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`);
+}
+
+// ---------- search ----------
+function searchProducts(){
+  const q = document.getElementById("searchInput").value.trim().toLowerCase();
+  const shop = document.getElementById("shop");
+  shop.innerHTML = "";
+  products.forEach(p=>{
+    if(p.name.toLowerCase().includes(q)){
+      shop.innerHTML += `
+        <div class="card">
+          ${p.hot?'<span class="hotBadge">Hot 🔥</span>':''}
+          <img src="${p.image}" alt="${escapeHtml(p.name)}">
+          <h3>${escapeHtml(p.name)}</h3>
+          <p>${escapeHtml(p.price)}</p>
+          <button onclick="orderWhatsApp('${escapeJs(p.name)}','${escapeJs(p.price)}')">Order on WhatsApp</button>
+        </div>
+      `;
+    }
+  });
+}
+
+// ---------- admin settings: save number/password ----------
+function saveWhatsAppNumber(){
+  const val = document.getElementById("waNumber").value.trim();
+  if(!val){ alert("Enter a valid WhatsApp number."); return; }
+  waNumber = val;
+  localStorage.setItem("waNumber", val);
+  document.getElementById("footerNumber").innerText = "+" + val;
+  alert("WhatsApp number saved ✅");
+}
+
+function saveAdminPassword(){
+  const val = document.getElementById("adminPassChange").value.trim();
+  if(!val){ alert("Enter a valid password."); return; }
+  adminPass = val;
+  localStorage.setItem("adminPass", val);
+  document.getElementById("adminPassChange").value = "";
+  alert("Password saved ✅");
+}
+
+// ---------- security Qs: set & recover ----------
+function recoverPassword(){
+  const q = document.getElementById("secQuestion").value;
+  const a = document.getElementById("secAnswer").value.trim();
+  if(!q || !a){ alert("Choose a question and type an answer."); return; }
+
+  // if stored answer exists, validate
+  if(secAnswers[q]){
+    if(secAnswers[q].toLowerCase() === a.toLowerCase()){
+      // allow reset or show (owner choice); here we show and also allow reset prompt
+      if(confirm("Answer correct. Show current password? (OK = show, Cancel = reset password)")){
+        alert("Your password is: " + adminPass);
+      } else {
+        const newPass = prompt("Enter a new admin password (will replace current):");
+        if(newPass) {
+          adminPass = newPass;
+          localStorage.setItem("adminPass", adminPass);
+          alert("Password reset ✅");
+        }
+      }
+    } else {
+      alert("Wrong answer ❌");
+    }
+  } else {
+    // no stored answer for this question — offer to save this answer
+    if(confirm("No recovery answer set for this question. Save current answer for recovery?")){
+      secAnswers[q] = a;
+      localStorage.setItem("secAnswers", JSON.stringify(secAnswers));
+      alert("Recovery answer saved ✅");
+    } else {
+      alert("No action taken.");
+    }
   }
-  document.getElementById("shop").style.display="none";
-  document.getElementById("cart").style.display="none";
-  document.getElementById("admin").style.display="none";
-  document.getElementById(section).style.display="block";
 }
 
+// ---------- show section (admin login with 'forgot' option) ----------
+function showSection(section){
+  if(section === "admin"){
+    const pass = prompt("Enter Admin Password (or type 'forgot' to recover):");
+    if(pass === "forgot"){
+      // show small modal flow using recoverPassword UI: focus admin panel sec inputs
+      alert("You'll be prompted to answer a security question next. Select a question and enter the answer, then press Recover.");
+      // open admin so they can use recover UI
+      document.getElementById("shop").style.display = "none";
+      document.getElementById("cart").style.display = "none";
+      document.getElementById("admin").style.display = "block";
+      return;
+    }
+    if(pass !== adminPass){
+      alert("Wrong password ❌");
+      return;
+    }
+  }
+  document.getElementById("shop").style.display = "none";
+  document.getElementById("cart").style.display = "none";
+  document.getElementById("admin").style.display = "none";
+  document.getElementById(section).style.display = "block";
+}
+
+// small helpers to avoid injection in template strings
+function escapeHtml(str){
+  return String(str||"").replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+}
+function escapeJs(str){
+  return String(str||"").replace(/'/g,"\\'");
+}
+
+// ---------- init ----------
 displayProducts();
 displayAdminProducts();
 </script>
