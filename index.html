@@ -12,8 +12,8 @@
     .hero {padding:50px 20px; text-align:center; color:white; border-bottom-left-radius:20px; border-bottom-right-radius:20px; position:relative;}
     #searchWrapper {text-align:center; margin:20px;}
     #searchInput {padding:12px; width:90%; max-width:500px; border-radius:10px; border:1px solid #ccc; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
-    .products, #adminProducts, #cartItemsWrapper {padding:20px; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:20px;}
-    .card {border-radius:15px; padding:15px; text-align:center; background:white; transition:transform 0.25s, box-shadow 0.25s; box-shadow:0 4px 12px rgba(0,0,0,0.08); position:relative;}
+    .products, #adminProducts, #cartItemsWrapper, #ordersWrapper {padding:20px; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:20px;}
+    .card {border-radius:15px; padding:15px; text-align:center; background:white; transition:transform 0.25s, box-shadow 0.25s; box-shadow:0 4px 12px rgba(0,0,0,0.08); position:relative; cursor:pointer;}
     .card:hover {transform:translateY(-5px); box-shadow:0 10px 30px rgba(0,0,0,0.15);}
     .card img {width:100%; height:200px; object-fit:contain; border-radius:12px;}
     .hotBadge {position:absolute; top:10px; right:10px; background:red; color:white; padding:5px 10px; border-radius:12px; font-size:12px; font-weight:bold;}
@@ -21,13 +21,12 @@
     button:hover {transform:scale(1.03); box-shadow:0 6px 18px rgba(0,0,0,0.18);}
     footer {background:black; color:white; text-align:center; padding:15px; margin-top:20px;}
     #cart, #admin {padding:20px; display:none;}
-    input[type=text], input[type=password], input[type=file], input[type=color] {width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box;}
+    input[type=text], input[type=password], input[type=file], input[type=color], input[type=email], textarea {width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box;}
     .smallBtn {padding:6px; font-size:12px; margin-top:6px;}
     @media (max-width:520px){ .hero{padding:30px 12px;} .card img{height:160px;} }
   </style>
 </head>
 <body>
-
 <header>
   <h1>Paramount Phones & Gadgets</h1>
   <p>Your Number 1 Gadget Plug</p>
@@ -57,6 +56,7 @@
   <h2>Your Cart</h2>
   <div id="cartItemsWrapper"></div>
   <input type="text" id="buyerName" placeholder="Your Name">
+  <input type="email" id="buyerEmail" placeholder="Email Address">
   <input type="text" id="buyerPhone" placeholder="Phone Number">
   <input type="text" id="buyerAddress" placeholder="Delivery Address">
   <button onclick="checkout()">Pay & Order</button>
@@ -65,10 +65,10 @@
 <!-- ADMIN -->
 <div id="admin">
   <h2>Add / Manage Phones</h2>
-
   <input type="text" id="pname" placeholder="Phone Name">
   <input type="text" id="pprice" placeholder="Price (₦)">
   <input type="text" id="pimage" placeholder="Image URL (optional)" oninput="previewURL()">
+  <textarea id="pdesc" placeholder="Product Description"></textarea>
   <input type="file" id="pfile" accept="image/*" onchange="previewImage(event)">
   <img id="previewImg" src="" style="display:none; width:100%; max-height:220px; object-fit:contain; border-radius:12px; margin-bottom:10px;">
   <button onclick="addProduct()">Add Phone</button>
@@ -89,6 +89,10 @@
 
   <h3>Existing Products</h3>
   <div id="adminProducts"></div>
+
+  <h3>Orders</h3>
+  <div id="ordersWrapper"></div>
+
   <h3>Visitor Count: <span id="visitCount">0</span></h3>
 </div>
 
@@ -98,32 +102,25 @@
 </footer>
 
 <script src="https://js.paystack.co/v1/inline.js"></script>
-
 <script>
-// ---------- data ----------
 let products = JSON.parse(localStorage.getItem("products")) || [
-  {name:"iPhone 13", price:550000, image:"https://via.placeholder.com/200", hot:true},
-  {name:"Samsung A14", price:150000, image:"https://via.placeholder.com/200", hot:false},
-  {name:"Tecno Spark 20", price:135000, image:"https://via.placeholder.com/200", hot:false},
-  {name:"Infinix Note 30", price:180000, image:"https://via.placeholder.com/200", hot:false}
+  {name:"iPhone 13", price:550000, image:"https://via.placeholder.com/200", hot:true, description:"The latest iPhone with amazing camera and performance."},
+  {name:"Samsung A14", price:150000, image:"https://via.placeholder.com/200", hot:false, description:"Affordable Samsung phone with long-lasting battery."},
+  {name:"Tecno Spark 20", price:135000, image:"https://via.placeholder.com/200", hot:false, description:"Stylish Tecno phone with good display."},
+  {name:"Infinix Note 30", price:180000, image:"https://via.placeholder.com/200", hot:false, description:"Powerful Infinix with large screen and battery."}
 ];
 
 let cart = [];
-
-// visitor counter
+let orders = JSON.parse(localStorage.getItem("orders")) || [];
 let visits = Number(localStorage.getItem("visits") || 0);
 visits++; localStorage.setItem("visits", visits);
 document.getElementById("visitCount").innerText = visits;
 
-// WhatsApp number
 let waNumber = localStorage.getItem("waNumber") || "2349166710777";
 document.getElementById("waNumber").value = waNumber;
 document.getElementById("footerNumber").innerText = "+"+waNumber;
 
-// admin password
 let adminPass = localStorage.getItem("adminPass") || "Paramountpaul1";
-
-// uploaded image
 let uploadedImage = "";
 
 // ---------- preview ----------
@@ -140,39 +137,43 @@ function previewImage(event){
   reader.readAsDataURL(file);
 }
 function previewURL(){
-  const url = document.getElementById("pimage").value.trim();
+  const url=document.getElementById("pimage").value.trim();
   if(uploadedImage) return;
-  const img = document.getElementById("previewImg");
-  if(!url){ img.style.display="none"; img.src=""; return; }
-  img.src = url; img.style.display="block";
+  const img=document.getElementById("previewImg");
+  if(!url){
+    img.style.display="none";
+    img.src="";
+    return;
+  }
+  img.src=url; img.style.display="block";
 }
 
-// ---------- display ----------
+// ---------- display products ----------
 function displayProducts(){
-  const shop = document.getElementById("shop");
-  shop.innerHTML = "";
+  const shop=document.getElementById("shop");
+  shop.innerHTML="";
   products.forEach((p,i)=>{
     shop.innerHTML += `
-      <div class="card">
+      <div class="card" onclick="viewProduct(${i})">
         ${p.hot?'<span class="hotBadge">Hot 🔥</span>':''}
         <img src="${p.image}" alt="${escapeHtml(p.name)}">
         <h3>${escapeHtml(p.name)}</h3>
         <p>₦${Number(p.price).toLocaleString()}</p>
-        <button onclick="addToCart(${i})">Add to Cart</button>
       </div>
     `;
   });
 }
 
 function displayAdminProducts(){
-  const adminDiv = document.getElementById("adminProducts");
-  adminDiv.innerHTML = "";
+  const adminDiv=document.getElementById("adminProducts");
+  adminDiv.innerHTML="";
   products.forEach((p,i)=>{
-    adminDiv.innerHTML += `
+    adminDiv.innerHTML+=`
       <div class="card">
-        <img src="${p.image}" alt="${escapeHtml(p.name)}">
+        <img src="${p.image}">
         <h3>${escapeHtml(p.name)}</h3>
         <p>₦${Number(p.price).toLocaleString()}</p>
+        <p>${escapeHtml(p.description)}</p>
         <button class="smallBtn" onclick="editProduct(${i})">✏️ Edit</button>
         <button class="smallBtn" onclick="deleteProduct(${i})">🗑️ Delete</button>
         <button class="smallBtn" onclick="toggleHot(${i})">${p.hot?'🔥 Remove Hot':'🔥 Mark Hot'}</button>
@@ -181,143 +182,244 @@ function displayAdminProducts(){
   });
 }
 
-// ---------- add / edit / delete ----------
-function addProduct(){
-  const name = document.getElementById("pname").value.trim();
-  const price = document.getElementById("pprice").value.trim();
-  const urlImage = document.getElementById("pimage").value.trim();
-  const image = uploadedImage || urlImage;
-  if(!name || !price || !image){ alert("Fill name, price, image."); return; }
-  products.push({name, price:parseFloat(price), image, hot:false});
-  localStorage.setItem("products", JSON.stringify(products));
-  document.getElementById("pname").value=""; document.getElementById("pprice").value=""; document.getElementById("pimage").value=""; document.getElementById("pfile").value=""; uploadedImage="";
-  document.getElementById("previewImg").style.display="none";
-  displayProducts(); displayAdminProducts(); alert("Product Added ✅");
+// ---------- view product popup ----------
+function viewProduct(i){
+  const p = products[i];
+  const html = `
+    <div style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center; z-index:9999;">
+      <div style="background:white; padding:20px; border-radius:15px; max-width:500px; width:90%; text-align:center; position:relative;">
+        <button onclick="this.parentElement.parentElement.remove()" style="position:absolute; top:10px; right:10px; font-size:18px;">✖</button>
+        <img src="${p.image}" style="width:100%; max-height:250px; object-fit:contain; border-radius:12px;">
+        <h2>${escapeHtml(p.name)}</h2>
+        <p><strong>Price:</strong> ₦${Number(p.price).toLocaleString()}</p>
+        <p>${escapeHtml(p.description)}</p>
+        <button onclick="addToCart(${i}); this.parentElement.parentElement.remove()">Add to Cart</button>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', html);
 }
-
-function editProduct(index){
-  const newName = prompt("Enter new phone name:", products[index].name);
-  const newPrice = prompt("Enter new price:", products[index].price);
-  const newImage = prompt("Enter new image URL (leave blank to keep current):", products[index].image);
-  if(newName && newPrice){
-    products[index] = {name:newName, price:parseFloat(newPrice), image:newImage?newImage:products[index].image, hot:products[index].hot};
-    localStorage.setItem("products", JSON.stringify(products));
-    displayProducts(); displayAdminProducts(); alert("Product Updated ✅");
-  }
-}
-
-function deleteProduct(index){ if(confirm("Delete this product?")){ products.splice(index,1); localStorage.setItem("products", JSON.stringify(products)); displayProducts(); displayAdminProducts(); } }
-function toggleHot(index){ products[index].hot=!products[index].hot; localStorage.setItem("products", JSON.stringify(products)); displayProducts(); displayAdminProducts(); }
 
 // ---------- cart ----------
-function addToCart(i){ cart.push(products[i]); displayCart(); alert("Added to Cart ✅"); }
+function addToCart(i){
+  let product = products[i];
+  let existing = cart.find(item => item.name === product.name);
+  if(existing){ existing.qty += 1; } else { cart.push({name:product.name, price:Number(product.price), image:product.image, qty:1}); }
+  displayCart(); alert("Added to Cart ✅");
+}
+
 function displayCart(){
-  const cartDiv = document.getElementById("cartItemsWrapper");
-  cartDiv.innerHTML = "";
-  let total = 0;
+  const cartDiv=document.getElementById("cartItemsWrapper");
+  cartDiv.innerHTML="";
   cart.forEach((p,i)=>{
-    total += Number(p.price);
     cartDiv.innerHTML += `
       <div class="card">
         <img src="${p.image}">
         <h3>${escapeHtml(p.name)}</h3>
         <p>₦${Number(p.price).toLocaleString()}</p>
+        <p><strong>Qty:</strong> 
+          <button class="smallBtn" onclick="decreaseQty(${i})">-</button>
+          ${p.qty}
+          <button class="smallBtn" onclick="increaseQty(${i})">+</button>
+        </p>
+        <p><strong>Subtotal:</strong> ₦${(p.price * p.qty).toLocaleString()}</p>
         <button onclick="removeFromCart(${i})">Remove</button>
       </div>
     `;
   });
-  if(cart.length > 0){
-    cartDiv.innerHTML += `<h3>Total: ₦${total.toLocaleString()}</h3>`;
-  }
+  let total = cart.reduce((t, item) => t + (item.price * item.qty), 0);
+  cartDiv.innerHTML += `<h3>Total: ₦${total.toLocaleString()}</h3>`;
 }
+
+function increaseQty(i){ cart[i].qty++; displayCart(); }
+function decreaseQty(i){ if(cart[i].qty>1){cart[i].qty--;}else{cart.splice(i,1);} displayCart(); }
 function removeFromCart(i){ cart.splice(i,1); displayCart(); }
 
 // ---------- checkout ----------
 function checkout(){
-  const name = document.getElementById("buyerName").value.trim();
-  const phone = document.getElementById("buyerPhone").value.trim();
-  const address = document.getElementById("buyerAddress").value.trim();
-  if(!name || !phone || !address || cart.length===0){ alert("Fill details & cart cannot be empty"); return; }
+  const name=document.getElementById("buyerName").value.trim();
+  const email=document.getElementById("buyerEmail").value.trim();
+  const phone=document.getElementById("buyerPhone").value.trim();
+  const address=document.getElementById("buyerAddress").value.trim();
+  if(!name||!email||!phone||!address||cart.length===0){ alert("Fill all details & cart cannot be empty"); return; }
 
-  const total = cart.reduce((sum,item) => sum + Number(item.price), 0);
-
-  let orderDesc = "Order Details:\n";
-  cart.forEach(p => {
-    orderDesc += `${p.name} - ₦${Number(p.price).toLocaleString()}\n`;
-  });
+  const total = cart.reduce((a,b)=> a + (b.price * b.qty), 0);
+  orders.push({name,email,phone,address,items:cart.map(item=>({name:item.name,price:item.price,qty:item.qty,subtotal:item.price*item.qty})), total});
+  localStorage.setItem("orders", JSON.stringify(orders));
 
   var handler = PaystackPop.setup({
-    key: 'pk_test_162ba6ca046d82c62b847013ea3230a862921046',
-    email: phone+'@email.com',
-    amount: total*100,
-    currency: "NGN",
-    ref: '' + Math.floor(Math.random()*1000000000+1),
-    metadata: {custom_fields:[
-      {display_name:"Customer Name", value:name},
-      {display_name:"Phone", value:phone},
-      {display_name:"Address", value:address}
-    ]},
-    callback: function(response){
-      alert('Payment Successful ✅\nRef: '+response.reference+'\n\n'+orderDesc);
-      cart=[]; displayCart();
+    key:'pk_test_162ba6ca046d82c62b847013ea3230a862921046',
+    email: email,
+    amount: total * 100,
+    currency:"NGN",
+    ref:'' + Math.floor(Math.random()*1000000000 + 1),
+    metadata:{
+      custom_fields:[
+        {display_name:"Customer Name", value:name},
+        {display_name:"Email", value:email},
+        {display_name:"Phone", value:phone},
+        {display_name:"Address", value:address}
+      ]
     },
-    onClose: function(){ alert('Payment Cancelled ❌'); }
+    callback:function(response){
+      alert('Payment Successful. Ref: ' + response.reference);
+      // Send details to WhatsApp
+      let waMsg = `Hello! New order:\nName: ${name}\nPhone: ${phone}\nAddress: ${address}\nTotal: ₦${total.toLocaleString()}\nRef: ${response.reference}`;
+      window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(waMsg)}`, '_blank');
+      cart=[]; displayCart(); displayOrders();
+    },
+    onClose:function(){ alert('Payment Cancelled'); }
   });
-
   handler.openIframe();
 }
 
-// ---------- admin settings ----------
-function saveWhatsAppNumber(){ const val=document.getElementById("waNumber").value.trim(); if(!val){ alert("Enter number"); return; } waNumber=val; localStorage.setItem("waNumber",val); document.getElementById("footerNumber").innerText="+"+val; alert("WhatsApp number saved ✅"); }
-function saveAdminPassword(){ const val=document.getElementById("adminPassChange").value.trim(); if(!val){ alert("Enter password"); return; } adminPass=val; localStorage.setItem("adminPass",val); document.getElementById("adminPassChange").value=""; alert("Password saved ✅"); }
+// ---------- orders ----------
+function displayOrders(){
+  const ordersDiv=document.getElementById("ordersWrapper");
+  ordersDiv.innerHTML="";
+  if(orders.length===0){ ordersDiv.innerHTML="<p>No orders yet.</p>"; return; }
+  orders.forEach((o,i)=>{
+    ordersDiv.innerHTML+=`
+      <div class="card">
+        <h3>Order #${i+1}</h3>
+        <p><strong>Name:</strong> ${escapeHtml(o.name)}</p>
+        <p><strong>Email:</strong> ${escapeHtml(o.email)}</p>
+        <p><strong>Phone:</strong> ${escapeHtml(o.phone)}</p>
+        <p><strong>Address:</strong> ${escapeHtml(o.address)}</p>
+        <p><strong>Items:</strong></p>
+        <ul>
+          ${o.items.map(it=>`<li>${escapeHtml(it.name)} — ₦${it.price.toLocaleString()} × ${it.qty} = ₦${it.subtotal.toLocaleString()}</li>`).join('')}
+        </ul>
+        <p><strong>Total:</strong> ₦${o.total.toLocaleString()}</p>
+      </div>
+    `;
+  });
+}
+
+// ---------- admin functions ----------
+function addProduct(){
+  const name=document.getElementById("pname").value.trim();
+  const price=document.getElementById("pprice").value.trim();
+  const desc=document.getElementById("pdesc").value.trim();
+  const url=document.getElementById("pimage").value.trim();
+  const image=uploadedImage || url;
+  if(!name||!price||!image||!desc){ alert("Fill name, price, image & description."); return; }
+  products.push({name, price:parseFloat(price), image, hot:false, description:desc});
+  localStorage.setItem("products", JSON.stringify(products));
+  document.getElementById("pname").value=""; document.getElementById("pprice").value="";
+  document.getElementById("pdesc").value=""; document.getElementById("pimage").value="";
+  document.getElementById("pfile").value=""; uploadedImage=""; document.getElementById("previewImg").style.display="none";
+  displayProducts(); displayAdminProducts(); alert("Product Added ✅");
+}
+
+function editProduct(i){
+  const newName=prompt("Enter new phone name:", products[i].name);
+  const newPrice=prompt("Enter new price:", products[i].price);
+  const newDesc=prompt("Enter new description:", products[i].description);
+  const newImage=prompt("Enter new image URL (leave blank to keep current):", products[i].image);
+  if(newName && newPrice && newDesc){
+    products[i] = {
+      name: newName,
+      price: parseFloat(newPrice),
+      image: newImage ? newImage : products[i].image,
+      hot: products[i].hot,
+      description: newDesc
+    };
+    localStorage.setItem("products", JSON.stringify(products));
+    displayProducts();
+    displayAdminProducts();
+    alert("Product Updated ✅");
+  }
+}
+
+function deleteProduct(i){
+  if(confirm("Delete this product?")){
+    products.splice(i,1);
+    localStorage.setItem("products", JSON.stringify(products));
+    displayProducts();
+    displayAdminProducts();
+  }
+}
+
+function toggleHot(i){
+  products[i].hot = !products[i].hot;
+  localStorage.setItem("products", JSON.stringify(products));
+  displayProducts();
+  displayAdminProducts();
+}
+
+function saveWhatsAppNumber(){
+  const val = document.getElementById("waNumber").value.trim();
+  if(!val){ alert("Enter number"); return; }
+  waNumber = val;
+  localStorage.setItem("waNumber", val);
+  document.getElementById("footerNumber").innerText = "+" + val;
+  alert("WhatsApp number saved ✅");
+}
+
+function saveAdminPassword(){
+  const val = document.getElementById("adminPassChange").value.trim();
+  if(!val){ alert("Enter password"); return; }
+  adminPass = val;
+  localStorage.setItem("adminPass", val);
+  document.getElementById("adminPassChange").value = "";
+  alert("Password saved ✅");
+}
+
 function saveHero(){
-  const title=document.getElementById("adminHeroTitle").value.trim();
-  const text=document.getElementById("adminHeroText").value.trim();
-  const btnText=document.getElementById("adminHeroBtnText").value.trim();
-  const color1=document.getElementById("adminHeroColor1").value;
-  const color2=document.getElementById("adminHeroColor2").value;
-  if(title) document.getElementById("heroTitle").innerText=title;
-  if(text) document.getElementById("heroText").innerText=text;
-  if(btnText) document.getElementById("heroBtn").innerText=btnText;
-  document.getElementById("heroSection").style.background=`linear-gradient(120deg,${color1},${color2})`;
+  const title = document.getElementById("adminHeroTitle").value.trim();
+  const text = document.getElementById("adminHeroText").value.trim();
+  const btnText = document.getElementById("adminHeroBtnText").value.trim();
+  const color1 = document.getElementById("adminHeroColor1").value;
+  const color2 = document.getElementById("adminHeroColor2").value;
+
+  if(title) document.getElementById("heroTitle").innerText = title;
+  if(text) document.getElementById("heroText").innerText = text;
+  if(btnText) document.getElementById("heroBtn").innerText = btnText;
+  document.getElementById("heroSection").style.background = `linear-gradient(120deg,${color1},${color2})`;
   alert("Hero Section Updated ✅");
 }
 
-// ---------- hero WhatsApp order ----------
 function openWhatsApp(){
   window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent("Hello, I want to order via the hero button")}`);
 }
 
-// ---------- search ----------
 function searchProducts(){
-  const q=document.getElementById("searchInput").value.trim().toLowerCase();
-  const shop=document.getElementById("shop");
-  shop.innerHTML="";
+  const q = document.getElementById("searchInput").value.trim().toLowerCase();
+  const shop = document.getElementById("shop");
+  shop.innerHTML = "";
   products.forEach((p,i)=>{
     if(p.name.toLowerCase().includes(q)){
-      shop.innerHTML+=`<div class="card">${p.hot?'<span class="hotBadge">Hot 🔥</span>':''}<img src="${p.image}"><h3>${escapeHtml(p.name)}</h3><p>₦${Number(p.price).toLocaleString()}</p><button onclick="addToCart(${i})">Add to Cart</button></div>`;
+      shop.innerHTML += `
+        <div class="card" onclick="viewProduct(${i})">
+          ${p.hot?'<span class="hotBadge">Hot 🔥</span>':''}
+          <img src="${p.image}">
+          <h3>${escapeHtml(p.name)}</h3>
+          <p>₦${Number(p.price).toLocaleString()}</p>
+        </div>
+      `;
     }
   });
 }
 
-// ---------- show section ----------
 function showSection(section){
   if(section==='admin'){
-    const pass=prompt("Enter Admin Password:");
+    const pass = prompt("Enter Admin Password:");
     if(pass!==adminPass){ alert("Wrong password ❌"); return; }
   }
   document.getElementById("shop").style.display="none";
   document.getElementById("cart").style.display="none";
   document.getElementById("admin").style.display="none";
   document.getElementById(section).style.display="block";
+  displayOrders();
 }
 
-// ---------- helpers ----------
-function escapeHtml(str){ return String(str||"").replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
+function escapeHtml(str){
+  return String(str||"").replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+}
 
 displayProducts();
 displayAdminProducts();
 </script>
-
 </body>
 </html>
