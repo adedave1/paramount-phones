@@ -1,425 +1,187 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Paramount Phones & Gadgets</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <style>
-    body {margin:0; font-family:Arial,sans-serif; background:#f9f9f9; color:#111;}
-    header {background:#222; color:white; padding:20px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.3);}
-    nav {background:#111; padding:10px; text-align:center;}
-    nav a {color:white; margin:10px; text-decoration:none; font-weight:bold; cursor:pointer; transition:0.2s;}
-    nav a:hover {color:#f9d423;}
-    .hero {padding:50px 20px; text-align:center; color:white; border-bottom-left-radius:20px; border-bottom-right-radius:20px; position:relative;}
-    #searchWrapper {text-align:center; margin:20px;}
-    #searchInput {padding:12px; width:90%; max-width:500px; border-radius:10px; border:1px solid #ccc; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
-    .products, #adminProducts, #cartItemsWrapper, #ordersWrapper {padding:20px; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:20px;}
-    .card {border-radius:15px; padding:15px; text-align:center; background:white; transition:transform 0.25s, box-shadow 0.25s; box-shadow:0 4px 12px rgba(0,0,0,0.08); position:relative; cursor:pointer;}
-    .card:hover {transform:translateY(-5px); box-shadow:0 10px 30px rgba(0,0,0,0.15);}
-    .card img {width:100%; height:200px; object-fit:contain; border-radius:12px;}
-    .hotBadge {position:absolute; top:10px; right:10px; background:red; color:white; padding:5px 10px; border-radius:12px; font-size:12px; font-weight:bold;}
-    button {background:linear-gradient(90deg,#ff4e50,#f9d423); color:white; border-radius:10px; border:none; padding:12px; margin-top:8px; cursor:pointer; width:100%; font-weight:700; transition:transform .15s, box-shadow .15s;}
-    button:hover {transform:scale(1.03); box-shadow:0 6px 18px rgba(0,0,0,0.18);}
-    footer {background:black; color:white; text-align:center; padding:15px; margin-top:20px;}
-    #cart, #admin {padding:20px; display:none;}
-    input[type=text], input[type=password], input[type=file], input[type=color], input[type=email], textarea {width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box;}
-    .smallBtn {padding:6px; font-size:12px; margin-top:6px;}
-    @media (max-width:520px){ .hero{padding:30px 12px;} .card img{height:160px;} }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Paramount Phones | Premium Store</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://js.paystack.co/v1/inline.js"></script>
 </head>
 <body>
+
+<div class="grain-overlay"></div>
+
+<!-- ══ HEADER ══════════════════════════════════════════════ -->
 <header>
-  <h1>Paramount Phones & Gadgets</h1>
-  <p>Your Number 1 Gadget Plug</p>
+    <div class="nav-container">
+        <h1 class="logo">
+            <span id="admin-trigger" onclick="toggleAdmin()">P</span><span onclick="location.reload()">ARAMOUNT</span>
+        </h1>
+        <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input type="text" id="search" placeholder="Search phones…" onkeyup="searchPhones()">
+        </div>
+        <div class="header-icons">
+            <div id="auth-section">
+                <span id="user-display" onclick="toggleAuthModal()" class="auth-btn">LOGIN</span>
+                <span id="logout-btn" onclick="handleLogout()" style="display:none;" class="auth-btn logout">LOGOUT</span>
+            </div>
+            <div onclick="openCart()" class="cart-trigger">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                    <path d="M6 2 3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <path d="M16 10a4 4 0 01-8 0"/>
+                </svg>
+                <span id="cart-count" class="cart-badge">0</span>
+            </div>
+        </div>
+    </div>
 </header>
 
-<nav>
-  <a onclick="showSection('shop')">Shop</a>
-  <a onclick="showSection('cart')">Cart 🛒</a>
-  <a onclick="showSection('admin')">Admin</a>
-</nav>
-
-<div class="hero" id="heroSection">
-  <h2 id="heroTitle">Latest Phones at Hot Prices 🔥</h2>
-  <p id="heroText">Order Directly via WhatsApp</p>
-  <button id="heroBtn" onclick="openWhatsApp()">Order Now</button>
+<!-- ══ HERO ════════════════════════════════════════════════ -->
+<div class="hero-banner">
+    <div class="hero-text">
+        <span class="hero-tag">Premium Devices</span>
+        <h2>The Finest iPhones,<br>Delivered to You.</h2>
+    </div>
 </div>
 
-<div id="searchWrapper">
-  <input type="text" id="searchInput" placeholder="Search phones..." onkeyup="searchProducts()">
+<!-- ══ PRODUCT GRID ════════════════════════════════════════ -->
+<main id="product-grid" class="grid"></main>
+
+<!-- ══ ADMIN PANEL ═════════════════════════════════════════ -->
+<div id="admin-panel" style="display:none;">
+    <div class="admin-wrapper">
+        <h2 class="admin-title">Owner Dashboard</h2>
+
+        <div class="admin-section">
+            <h3 class="admin-section-title">📦 Pending Orders</h3>
+            <div id="admin-orders-list" class="admin-orders">Loading…</div>
+        </div>
+
+        <div class="admin-section">
+            <h3 class="admin-section-title" id="form-header">Add New Product</h3>
+            <div class="admin-grid-form">
+                <input type="hidden" id="edit-id">
+                <input type="text"   id="new-name"  class="admin-input" placeholder="Phone Name">
+                <input type="number" id="new-price" class="admin-input" placeholder="Price (₦)">
+                <input type="number" id="new-stock" class="admin-input" placeholder="Stock Qty">
+                <div class="admin-full">
+                    <label class="file-label">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        <span>Choose Image</span>
+                        <input type="file" id="image-file" accept="image/*" onchange="uploadToImgBB()">
+                    </label>
+                    <input type="hidden" id="new-image">
+                    <p id="upload-status" class="upload-status"></p>
+                    <textarea id="new-desc" class="admin-input admin-textarea" placeholder="Specs & Condition"></textarea>
+                    <button onclick="saveProduct()" class="buy-btn">SAVE PRODUCT</button>
+                    <button onclick="resetAdminForm()" class="cancel-btn">Cancel / Clear</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-section">
+            <h3 class="admin-section-title">📂 Inventory</h3>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Product</th><th>Stock</th><th>Actions</th></tr></thead>
+                    <tbody id="admin-inventory-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- SHOP -->
-<div class="products" id="shop"></div>
-
-<!-- CART -->
-<div id="cart">
-  <h2>Your Cart</h2>
-  <div id="cartItemsWrapper"></div>
-  <input type="text" id="buyerName" placeholder="Your Name">
-  <input type="email" id="buyerEmail" placeholder="Email Address">
-  <input type="text" id="buyerPhone" placeholder="Phone Number">
-  <input type="text" id="buyerAddress" placeholder="Delivery Address">
-  <button onclick="checkout()">Pay & Order</button>
+<!-- ══ PRODUCT DETAIL MODAL ════════════════════════════════ -->
+<div id="product-modal" class="modal-overlay">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeActiveModal()" aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                <path d="M18 6 6 18M6 6l12 12"/>
+            </svg>
+        </button>
+        <img id="modal-img" src="" class="detail-img" alt="">
+        <h2 id="modal-name" class="modal-name"></h2>
+        <p  id="modal-price" class="detail-price"></p>
+        <p  id="modal-stock" class="modal-stock"></p>
+        <p  id="modal-desc"  class="modal-desc"></p>
+        <div class="modal-actions">
+            <button id="modal-add-btn" class="buy-btn">ADD TO CART</button>
+            <a id="whatsapp-btn" href="#" target="_blank" rel="noopener" class="buy-btn whatsapp-btn">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                </svg>
+                WhatsApp
+            </a>
+        </div>
+    </div>
 </div>
 
-<!-- ADMIN -->
-<div id="admin">
-  <h2>Add / Manage Phones</h2>
-  <input type="text" id="pname" placeholder="Phone Name">
-  <input type="text" id="pprice" placeholder="Price (₦)">
-  <input type="text" id="pimage" placeholder="Image URL (optional)" oninput="previewURL()">
-  <textarea id="pdesc" placeholder="Product Description"></textarea>
-  <input type="file" id="pfile" accept="image/*" onchange="previewImage(event)">
-  <img id="previewImg" src="" style="display:none; width:100%; max-height:220px; object-fit:contain; border-radius:12px; margin-bottom:10px;">
-  <button onclick="addProduct()">Add Phone</button>
-
-  <h3>Business Settings</h3>
-  <input type="text" id="waNumber" placeholder="WhatsApp Number">
-  <button class="smallBtn" onclick="saveWhatsAppNumber()">Save Number</button>
-  <input type="password" id="adminPassChange" placeholder="Change Admin Password">
-  <button class="smallBtn" onclick="saveAdminPassword()">Save Password</button>
-
-  <h3>Edit Hero Section</h3>
-  <input type="text" id="adminHeroTitle" placeholder="Hero Title">
-  <input type="text" id="adminHeroText" placeholder="Hero Text">
-  <input type="text" id="adminHeroBtnText" placeholder="Hero Button Text">
-  <input type="color" id="adminHeroColor1" value="#ff4e50">
-  <input type="color" id="adminHeroColor2" value="#f9d423">
-  <button class="smallBtn" onclick="saveHero()">Save Hero</button>
-
-  <h3>Existing Products</h3>
-  <div id="adminProducts"></div>
-
-  <h3>Orders</h3>
-  <div id="ordersWrapper"></div>
-
-  <h3>Visitor Count: <span id="visitCount">0</span></h3>
+<!-- ══ CART MODAL ══════════════════════════════════════════ -->
+<div id="cart-modal" class="modal-overlay">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeActiveModal()" aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                <path d="M18 6 6 18M6 6l12 12"/>
+            </svg>
+        </button>
+        <div class="cart-header-row">
+            <h2 class="modal-heading">Your Cart</h2>
+            <button id="clear-cart-btn" onclick="clearCart()" class="clear-cart-link" style="display:none;">Clear all</button>
+        </div>
+        <div id="cart-items"></div>
+        <div class="cart-total-row">
+            <span>Total</span>
+            <span class="total-amount">&#8358;<span id="total-price">0</span></span>
+        </div>
+        <div id="checkout-section" style="display:none; margin-top:18px;">
+            <input type="text"     id="custName"    class="cart-input" placeholder="Full Name">
+            <input type="email"    id="custEmail"   class="cart-input" placeholder="Email Address">
+            <input type="tel"      id="custPhone"   class="cart-input" placeholder="WhatsApp Number">
+            <textarea              id="custAddress" class="cart-input cart-textarea" placeholder="Delivery Address"></textarea>
+            <button onclick="payWithPaystack()" class="buy-btn pay-btn">PAY & CONFIRM ORDER</button>
+        </div>
+        <button onclick="showCheckout()" id="reveal-checkout-btn" class="buy-btn checkout-btn" style="display:none;">
+            PROCEED TO CHECKOUT
+        </button>
+    </div>
 </div>
 
+<!-- ══ AUTH MODAL ══════════════════════════════════════════ -->
+<div id="auth-modal" class="modal-overlay">
+    <div class="modal-content auth-modal-content">
+        <button class="close-btn" onclick="closeActiveModal()" aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                <path d="M18 6 6 18M6 6l12 12"/>
+            </svg>
+        </button>
+        <div class="auth-logo">P</div>
+        <h2 id="auth-title" class="modal-heading">Welcome Back</h2>
+        <input type="email"    id="auth-email"    class="cart-input" placeholder="Email Address">
+        <input type="password" id="auth-password" class="cart-input" placeholder="Password">
+        <button onclick="handleAuth()" class="buy-btn">CONTINUE</button>
+        <p class="auth-links">
+            <span onclick="switchAuth()" id="auth-link">Register New Account</span>
+            &nbsp;·&nbsp;
+            <span onclick="forgotPassword()">Forgot Password?</span>
+        </p>
+    </div>
+</div>
+
+<!-- ══ FOOTER ══════════════════════════════════════════════ -->
 <footer>
-  <p>Call / WhatsApp: <span id="footerNumber">+234 916 671 0777</span></p>
-  <p>© 2025 Paramount Phones & Gadgets</p>
+    <p>© 2026 Paramount Phones &nbsp;·&nbsp; Premium Devices, Trusted Service</p>
 </footer>
 
-<script src="https://js.paystack.co/v1/inline.js"></script>
-<script>
-let products = JSON.parse(localStorage.getItem("products")) || [
-  {name:"iPhone 13", price:550000, image:"https://via.placeholder.com/200", hot:true, description:"The latest iPhone with amazing camera and performance."},
-  {name:"Samsung A14", price:150000, image:"https://via.placeholder.com/200", hot:false, description:"Affordable Samsung phone with long-lasting battery."},
-  {name:"Tecno Spark 20", price:135000, image:"https://via.placeholder.com/200", hot:false, description:"Stylish Tecno phone with good display."},
-  {name:"Infinix Note 30", price:180000, image:"https://via.placeholder.com/200", hot:false, description:"Powerful Infinix with large screen and battery."}
-];
-
-let cart = [];
-let orders = JSON.parse(localStorage.getItem("orders")) || [];
-let visits = Number(localStorage.getItem("visits") || 0);
-visits++; localStorage.setItem("visits", visits);
-document.getElementById("visitCount").innerText = visits;
-
-let waNumber = localStorage.getItem("waNumber") || "2349166710777";
-document.getElementById("waNumber").value = waNumber;
-document.getElementById("footerNumber").innerText = "+"+waNumber;
-
-let adminPass = localStorage.getItem("adminPass") || "Paramountpaul1";
-let uploadedImage = "";
-
-// ---------- preview ----------
-function previewImage(event){
-  const file = event.target.files && event.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = function(){
-    uploadedImage = reader.result;
-    const img = document.getElementById("previewImg");
-    img.src = uploadedImage;
-    img.style.display = "block";
-  }
-  reader.readAsDataURL(file);
-}
-function previewURL(){
-  const url=document.getElementById("pimage").value.trim();
-  if(uploadedImage) return;
-  const img=document.getElementById("previewImg");
-  if(!url){
-    img.style.display="none";
-    img.src="";
-    return;
-  }
-  img.src=url; img.style.display="block";
-}
-
-// ---------- display products ----------
-function displayProducts(){
-  const shop=document.getElementById("shop");
-  shop.innerHTML="";
-  products.forEach((p,i)=>{
-    shop.innerHTML += `
-      <div class="card" onclick="viewProduct(${i})">
-        ${p.hot?'<span class="hotBadge">Hot 🔥</span>':''}
-        <img src="${p.image}" alt="${escapeHtml(p.name)}">
-        <h3>${escapeHtml(p.name)}</h3>
-        <p>₦${Number(p.price).toLocaleString()}</p>
-      </div>
-    `;
-  });
-}
-
-function displayAdminProducts(){
-  const adminDiv=document.getElementById("adminProducts");
-  adminDiv.innerHTML="";
-  products.forEach((p,i)=>{
-    adminDiv.innerHTML+=`
-      <div class="card">
-        <img src="${p.image}">
-        <h3>${escapeHtml(p.name)}</h3>
-        <p>₦${Number(p.price).toLocaleString()}</p>
-        <p>${escapeHtml(p.description)}</p>
-        <button class="smallBtn" onclick="editProduct(${i})">✏️ Edit</button>
-        <button class="smallBtn" onclick="deleteProduct(${i})">🗑️ Delete</button>
-        <button class="smallBtn" onclick="toggleHot(${i})">${p.hot?'🔥 Remove Hot':'🔥 Mark Hot'}</button>
-      </div>
-    `;
-  });
-}
-
-// ---------- view product popup ----------
-function viewProduct(i){
-  const p = products[i];
-  const html = `
-    <div style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center; z-index:9999;">
-      <div style="background:white; padding:20px; border-radius:15px; max-width:500px; width:90%; text-align:center; position:relative;">
-        <button onclick="this.parentElement.parentElement.remove()" style="position:absolute; top:10px; right:10px; font-size:18px;">✖</button>
-        <img src="${p.image}" style="width:100%; max-height:250px; object-fit:contain; border-radius:12px;">
-        <h2>${escapeHtml(p.name)}</h2>
-        <p><strong>Price:</strong> ₦${Number(p.price).toLocaleString()}</p>
-        <p>${escapeHtml(p.description)}</p>
-        <button onclick="addToCart(${i}); this.parentElement.parentElement.remove()">Add to Cart</button>
-      </div>
-    </div>
-  `;
-  document.body.insertAdjacentHTML('beforeend', html);
-}
-
-// ---------- cart ----------
-function addToCart(i){
-  let product = products[i];
-  let existing = cart.find(item => item.name === product.name);
-  if(existing){ existing.qty += 1; } else { cart.push({name:product.name, price:Number(product.price), image:product.image, qty:1}); }
-  displayCart(); alert("Added to Cart ✅");
-}
-
-function displayCart(){
-  const cartDiv=document.getElementById("cartItemsWrapper");
-  cartDiv.innerHTML="";
-  cart.forEach((p,i)=>{
-    cartDiv.innerHTML += `
-      <div class="card">
-        <img src="${p.image}">
-        <h3>${escapeHtml(p.name)}</h3>
-        <p>₦${Number(p.price).toLocaleString()}</p>
-        <p><strong>Qty:</strong> 
-          <button class="smallBtn" onclick="decreaseQty(${i})">-</button>
-          ${p.qty}
-          <button class="smallBtn" onclick="increaseQty(${i})">+</button>
-        </p>
-        <p><strong>Subtotal:</strong> ₦${(p.price * p.qty).toLocaleString()}</p>
-        <button onclick="removeFromCart(${i})">Remove</button>
-      </div>
-    `;
-  });
-  let total = cart.reduce((t, item) => t + (item.price * item.qty), 0);
-  cartDiv.innerHTML += `<h3>Total: ₦${total.toLocaleString()}</h3>`;
-}
-
-function increaseQty(i){ cart[i].qty++; displayCart(); }
-function decreaseQty(i){ if(cart[i].qty>1){cart[i].qty--;}else{cart.splice(i,1);} displayCart(); }
-function removeFromCart(i){ cart.splice(i,1); displayCart(); }
-
-// ---------- checkout ----------
-function checkout(){
-  const name=document.getElementById("buyerName").value.trim();
-  const email=document.getElementById("buyerEmail").value.trim();
-  const phone=document.getElementById("buyerPhone").value.trim();
-  const address=document.getElementById("buyerAddress").value.trim();
-  if(!name||!email||!phone||!address||cart.length===0){ alert("Fill all details & cart cannot be empty"); return; }
-
-  const total = cart.reduce((a,b)=> a + (b.price * b.qty), 0);
-  orders.push({name,email,phone,address,items:cart.map(item=>({name:item.name,price:item.price,qty:item.qty,subtotal:item.price*item.qty})), total});
-  localStorage.setItem("orders", JSON.stringify(orders));
-
-  var handler = PaystackPop.setup({
-    key:'pk_test_162ba6ca046d82c62b847013ea3230a862921046',
-    email: email,
-    amount: total * 100,
-    currency:"NGN",
-    ref:'' + Math.floor(Math.random()*1000000000 + 1),
-    metadata:{
-      custom_fields:[
-        {display_name:"Customer Name", value:name},
-        {display_name:"Email", value:email},
-        {display_name:"Phone", value:phone},
-        {display_name:"Address", value:address}
-      ]
-    },
-    callback:function(response){
-      alert('Payment Successful. Ref: ' + response.reference);
-      // Send details to WhatsApp
-      let waMsg = `Hello! New order:\nName: ${name}\nPhone: ${phone}\nAddress: ${address}\nTotal: ₦${total.toLocaleString()}\nRef: ${response.reference}`;
-      window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(waMsg)}`, '_blank');
-      cart=[]; displayCart(); displayOrders();
-    },
-    onClose:function(){ alert('Payment Cancelled'); }
-  });
-  handler.openIframe();
-}
-
-// ---------- orders ----------
-function displayOrders(){
-  const ordersDiv=document.getElementById("ordersWrapper");
-  ordersDiv.innerHTML="";
-  if(orders.length===0){ ordersDiv.innerHTML="<p>No orders yet.</p>"; return; }
-  orders.forEach((o,i)=>{
-    ordersDiv.innerHTML+=`
-      <div class="card">
-        <h3>Order #${i+1}</h3>
-        <p><strong>Name:</strong> ${escapeHtml(o.name)}</p>
-        <p><strong>Email:</strong> ${escapeHtml(o.email)}</p>
-        <p><strong>Phone:</strong> ${escapeHtml(o.phone)}</p>
-        <p><strong>Address:</strong> ${escapeHtml(o.address)}</p>
-        <p><strong>Items:</strong></p>
-        <ul>
-          ${o.items.map(it=>`<li>${escapeHtml(it.name)} — ₦${it.price.toLocaleString()} × ${it.qty} = ₦${it.subtotal.toLocaleString()}</li>`).join('')}
-        </ul>
-        <p><strong>Total:</strong> ₦${o.total.toLocaleString()}</p>
-      </div>
-    `;
-  });
-}
-
-// ---------- admin functions ----------
-function addProduct(){
-  const name=document.getElementById("pname").value.trim();
-  const price=document.getElementById("pprice").value.trim();
-  const desc=document.getElementById("pdesc").value.trim();
-  const url=document.getElementById("pimage").value.trim();
-  const image=uploadedImage || url;
-  if(!name||!price||!image||!desc){ alert("Fill name, price, image & description."); return; }
-  products.push({name, price:parseFloat(price), image, hot:false, description:desc});
-  localStorage.setItem("products", JSON.stringify(products));
-  document.getElementById("pname").value=""; document.getElementById("pprice").value="";
-  document.getElementById("pdesc").value=""; document.getElementById("pimage").value="";
-  document.getElementById("pfile").value=""; uploadedImage=""; document.getElementById("previewImg").style.display="none";
-  displayProducts(); displayAdminProducts(); alert("Product Added ✅");
-}
-
-function editProduct(i){
-  const newName=prompt("Enter new phone name:", products[i].name);
-  const newPrice=prompt("Enter new price:", products[i].price);
-  const newDesc=prompt("Enter new description:", products[i].description);
-  const newImage=prompt("Enter new image URL (leave blank to keep current):", products[i].image);
-  if(newName && newPrice && newDesc){
-    products[i] = {
-      name: newName,
-      price: parseFloat(newPrice),
-      image: newImage ? newImage : products[i].image,
-      hot: products[i].hot,
-      description: newDesc
-    };
-    localStorage.setItem("products", JSON.stringify(products));
-    displayProducts();
-    displayAdminProducts();
-    alert("Product Updated ✅");
-  }
-}
-
-function deleteProduct(i){
-  if(confirm("Delete this product?")){
-    products.splice(i,1);
-    localStorage.setItem("products", JSON.stringify(products));
-    displayProducts();
-    displayAdminProducts();
-  }
-}
-
-function toggleHot(i){
-  products[i].hot = !products[i].hot;
-  localStorage.setItem("products", JSON.stringify(products));
-  displayProducts();
-  displayAdminProducts();
-}
-
-function saveWhatsAppNumber(){
-  const val = document.getElementById("waNumber").value.trim();
-  if(!val){ alert("Enter number"); return; }
-  waNumber = val;
-  localStorage.setItem("waNumber", val);
-  document.getElementById("footerNumber").innerText = "+" + val;
-  alert("WhatsApp number saved ✅");
-}
-
-function saveAdminPassword(){
-  const val = document.getElementById("adminPassChange").value.trim();
-  if(!val){ alert("Enter password"); return; }
-  adminPass = val;
-  localStorage.setItem("adminPass", val);
-  document.getElementById("adminPassChange").value = "";
-  alert("Password saved ✅");
-}
-
-function saveHero(){
-  const title = document.getElementById("adminHeroTitle").value.trim();
-  const text = document.getElementById("adminHeroText").value.trim();
-  const btnText = document.getElementById("adminHeroBtnText").value.trim();
-  const color1 = document.getElementById("adminHeroColor1").value;
-  const color2 = document.getElementById("adminHeroColor2").value;
-
-  if(title) document.getElementById("heroTitle").innerText = title;
-  if(text) document.getElementById("heroText").innerText = text;
-  if(btnText) document.getElementById("heroBtn").innerText = btnText;
-  document.getElementById("heroSection").style.background = `linear-gradient(120deg,${color1},${color2})`;
-  alert("Hero Section Updated ✅");
-}
-
-function openWhatsApp(){
-  window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent("Hello, I want to order via the hero button")}`);
-}
-
-function searchProducts(){
-  const q = document.getElementById("searchInput").value.trim().toLowerCase();
-  const shop = document.getElementById("shop");
-  shop.innerHTML = "";
-  products.forEach((p,i)=>{
-    if(p.name.toLowerCase().includes(q)){
-      shop.innerHTML += `
-        <div class="card" onclick="viewProduct(${i})">
-          ${p.hot?'<span class="hotBadge">Hot 🔥</span>':''}
-          <img src="${p.image}">
-          <h3>${escapeHtml(p.name)}</h3>
-          <p>₦${Number(p.price).toLocaleString()}</p>
-        </div>
-      `;
-    }
-  });
-}
-
-function showSection(section){
-  if(section==='admin'){
-    const pass = prompt("Enter Admin Password:");
-    if(pass!==adminPass){ alert("Wrong password ❌"); return; }
-  }
-  document.getElementById("shop").style.display="none";
-  document.getElementById("cart").style.display="none";
-  document.getElementById("admin").style.display="none";
-  document.getElementById(section).style.display="block";
-  displayOrders();
-}
-
-function escapeHtml(str){
-  return String(str||"").replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
-}
-
-displayProducts();
-displayAdminProducts();
-</script>
+<script src="script.js"></script>
 </body>
 </html>

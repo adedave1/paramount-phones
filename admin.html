@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paramount Gadgets — Admin</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="admin.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ══ LOGIN GATE (shown until owner logs in) ══════════════ -->
+<div id="login-gate" class="gate">
+    <div class="gate-box">
+        <div class="gate-logo">P</div>
+        <h1 class="gate-title">Admin Access</h1>
+        <p class="gate-sub">Paramount Gadgets — Owner Portal</p>
+        <input type="email"    id="gate-email" class="gate-input" placeholder="Email Address">
+        <input type="password" id="gate-pass"  class="gate-input" placeholder="Password">
+        <button onclick="adminLogin()" class="gate-btn">LOGIN</button>
+        <p id="gate-error" class="gate-error"></p>
+    </div>
+</div>
+
+<!-- ══ ADMIN DASHBOARD (hidden until auth confirmed) ═══════ -->
+<div id="dashboard" style="display:none;">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <span>P</span>
+            <div>
+                <div class="sidebar-brand">PARAMOUNT</div>
+                <div class="sidebar-sub">Admin Portal</div>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <button class="nav-item active" onclick="showTab('analytics',this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><rect x="2" y="3" width="6" height="18"/><rect x="9" y="8" width="6" height="13"/><rect x="16" y="13" width="6" height="8"/></svg>
+                Analytics
+            </button>
+            <button class="nav-item" onclick="showTab('orders',this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+                Orders
+                <span id="pending-badge" class="nav-badge" style="display:none;">0</span>
+            </button>
+            <button class="nav-item" onclick="showTab('products',this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+                Products
+            </button>
+            <button class="nav-item" onclick="showTab('inventory',this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                Inventory
+            </button>
+        </nav>
+        <div class="sidebar-footer">
+            <span id="admin-email-display"></span>
+            <button onclick="adminLogout()" class="logout-btn">Logout</button>
+            <a href="index.html" class="store-link">← View Store</a>
+        </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="dash-main">
+
+        <!-- ── ANALYTICS TAB ── -->
+        <div id="tab-analytics" class="tab-content">
+            <h2 class="tab-title">Analytics</h2>
+            <div class="stats-grid">
+                <div class="stat-card gold">
+                    <span class="stat-icon">₦</span>
+                    <div><span id="stat-revenue" class="stat-val">0</span><span class="stat-label">Total Revenue</span></div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-icon">📦</span>
+                    <div><span id="stat-orders" class="stat-val">0</span><span class="stat-label">Total Orders</span></div>
+                </div>
+                <div class="stat-card orange">
+                    <span class="stat-icon">⏳</span>
+                    <div><span id="stat-pending" class="stat-val">0</span><span class="stat-label">Pending</span></div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-icon">🛍️</span>
+                    <div><span id="stat-products" class="stat-val">0</span><span class="stat-label">Products</span></div>
+                </div>
+            </div>
+            <div class="section-box">
+                <h3 class="section-title">🏆 Best Sellers</h3>
+                <div id="best-sellers"><p class="muted">No orders yet.</p></div>
+            </div>
+            <div class="section-box">
+                <h3 class="section-title">📅 Recent Orders</h3>
+                <div id="recent-orders"><p class="muted">Loading…</p></div>
+            </div>
+        </div>
+
+        <!-- ── ORDERS TAB ── -->
+        <div id="tab-orders" class="tab-content" style="display:none;">
+            <h2 class="tab-title">Orders</h2>
+            <div class="order-tabs">
+                <button class="otab active" onclick="filterOrders('pending',this)">⏳ Pending</button>
+                <button class="otab" onclick="filterOrders('shipped',this)">🚚 Shipped</button>
+                <button class="otab" onclick="filterOrders('delivered',this)">✅ Delivered</button>
+                <button class="otab" onclick="filterOrders('all',this)">All</button>
+            </div>
+            <div id="orders-list" class="orders-list"><p class="muted">Loading…</p></div>
+        </div>
+
+        <!-- ── ADD/EDIT PRODUCT TAB ── -->
+        <div id="tab-products" class="tab-content" style="display:none;">
+            <h2 class="tab-title" id="form-header">Add New Product</h2>
+            <div class="form-grid">
+                <input type="hidden" id="edit-id">
+                <div class="form-group">
+                    <label>Product Name</label>
+                    <input type="text" id="new-name" class="form-input" placeholder="e.g. iPhone 15 Pro Max 256GB">
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="new-category" class="form-input">
+                        <option value="phones">📱 Phones</option>
+                        <option value="laptops">💻 Laptops</option>
+                        <option value="tablets">📟 Tablets</option>
+                        <option value="accessories">🎧 Accessories</option>
+                        <option value="wearables">⌚ Wearables</option>
+                        <option value="gaming">🎮 Gaming</option>
+                        <option value="audio">🔊 Audio</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Price (₦)</label>
+                    <input type="number" id="new-price" class="form-input" placeholder="e.g. 850000">
+                </div>
+                <div class="form-group">
+                    <label>Stock Quantity</label>
+                    <input type="number" id="new-stock" class="form-input" placeholder="e.g. 5">
+                </div>
+                <div class="form-group full">
+                    <label>Product Image</label>
+                    <label class="file-drop" id="file-drop">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        <span id="file-drop-text">Click to upload or drag image here</span>
+                        <input type="file" id="image-file" accept="image/*" onchange="uploadToImgBB()">
+                    </label>
+                    <p id="upload-status" class="upload-status"></p>
+                    <input type="hidden" id="new-image">
+                    <div id="img-preview-wrap" style="display:none;">
+                        <img id="img-preview" class="img-preview" src="" alt="Preview">
+                    </div>
+                </div>
+                <div class="form-group full">
+                    <label>Description / Specs</label>
+                    <textarea id="new-desc" class="form-input form-textarea" placeholder="Grade, storage, colour, condition, accessories included…"></textarea>
+                </div>
+                <div class="form-actions full">
+                    <button onclick="saveProduct()" class="btn-primary">SAVE PRODUCT</button>
+                    <button onclick="resetForm()" class="btn-ghost">Clear Form</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── INVENTORY TAB ── -->
+        <div id="tab-inventory" class="tab-content" style="display:none;">
+            <div class="inventory-header">
+                <h2 class="tab-title">Inventory</h2>
+                <button onclick="showTab('products', document.querySelector('.nav-item:nth-child(3)'))" class="btn-primary btn-sm">+ Add Product</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody id="inventory-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- Receipt modal -->
+<div id="receipt-overlay" class="receipt-overlay" style="display:none;">
+    <div class="receipt-box">
+        <button onclick="closeReceipt()" class="receipt-close">✕</button>
+        <div id="receipt-body"></div>
+        <button onclick="downloadReceiptPDF()" class="btn-primary" style="margin-top:20px;width:100%;">⬇ DOWNLOAD PDF</button>
+    </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-wrap"></div>
+
+<script src="admin.js"></script>
+</body>
+</html>
